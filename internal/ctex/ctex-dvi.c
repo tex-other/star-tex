@@ -88,20 +88,10 @@ void ctex_dvi_write_dvi(ctex_dvi_t *self, dvi_index a, dvi_index b) {
 }
 
 void ctex_dvi_four(ctex_dvi_t *self, integer x) {
-  if (x >= 0) {
-    ctex_dvi_wU8(self, x / 16777216);
-  } else {
-    x += 1073741824;
-    x += 1073741824;
-    ctex_dvi_wU8(self, (x / 16777216) + 128);
-  }
-
-  x &= 16777215;
-  ctex_dvi_wU8(self, x / 65536);
-
-  x &= 65535;
-  ctex_dvi_wU8(self, x / 256);
-  ctex_dvi_wU8(self, x & 255);
+  ctex_dvi_wU8(self, x >> 24);
+  ctex_dvi_wU8(self, x >> 16);
+  ctex_dvi_wU8(self, x >> 8);
+  ctex_dvi_wU8(self, x);
 }
 
 void ctex_dvi_pop(ctex_dvi_t *self, integer l) {
