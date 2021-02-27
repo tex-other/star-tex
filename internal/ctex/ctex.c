@@ -7738,34 +7738,24 @@ _L10:
 
 void dvi_font_def(ctex_t *ctx, internal_font_number f) {
   pool_pointer k, N;
-  uint8_t font_area;
-  uint8_t font_name;
   integer font_area_id = ctx->fnt_infos.font_area[f];
   integer font_name_id = ctx->fnt_infos.font_name[f];
+  uint8_t areasz;
+  uint8_t namesz;
 
-  font_area = ctx->str_start[font_area_id + 1] - ctx->str_start[font_area_id];
-  font_name = ctx->str_start[font_name_id + 1] - ctx->str_start[font_name_id];
+  areasz = ctx->str_start[font_area_id + 1] - ctx->str_start[font_area_id];
+  namesz = ctx->str_start[font_name_id + 1] - ctx->str_start[font_name_id];
 
-  ctex_dvi_wU8(&ctx->dvi, 243);
-  ctex_dvi_wU8(&ctx->dvi, f - 1);
-  ctex_dvi_wU8(&ctx->dvi, ctx->fnt_infos.font_check[f].b0);
-  ctex_dvi_wU8(&ctx->dvi, ctx->fnt_infos.font_check[f].b1);
-  ctex_dvi_wU8(&ctx->dvi, ctx->fnt_infos.font_check[f].b2);
-  ctex_dvi_wU8(&ctx->dvi, ctx->fnt_infos.font_check[f].b3);
-  ctex_dvi_four(&ctx->dvi, ctx->fnt_infos.font_size[f]);
-  ctex_dvi_four(&ctx->dvi, ctx->fnt_infos.font_dsize[f]);
-  ctex_dvi_wU8(&ctx->dvi, font_area);
-  ctex_dvi_wU8(&ctx->dvi, font_name);
-  for (N = ctx->str_start[ctx->fnt_infos.font_area[f] + 1],
-      k = ctx->str_start[ctx->fnt_infos.font_area[f]];
-       k <= (N - 1); ++k) {
-    ctex_dvi_wU8(&ctx->dvi, ctx->str_pool[k]);
-  }
-  for (N = ctx->str_start[ctx->fnt_infos.font_name[f] + 1],
-      k = ctx->str_start[ctx->fnt_infos.font_name[f]];
-       k <= (N - 1); ++k) {
-    ctex_dvi_wU8(&ctx->dvi, ctx->str_pool[k]);
-  }
+  const char *area = &ctx->str_pool[ctx->str_start[font_area_id]];
+  const char *name = &ctx->str_pool[ctx->str_start[font_name_id]];
+
+  four_quarters font_check = ctx->fnt_infos.font_check[f];
+  uint32_t chksum = ((uint8_t)font_check.b0 << 24) |
+                    ((uint8_t)font_check.b1 << 16) |
+                    ((uint8_t)font_check.b2 << 8) | ((uint8_t)font_check.b3);
+
+  ctex_dvi_font_def(&ctx->dvi, f - 1, chksum, ctx->fnt_infos.font_size[f],
+                    ctx->fnt_infos.font_dsize[f], areasz, area, namesz, name);
 }
 
 void movement(ctex_t *ctx, scaled w, uint8_t o) {

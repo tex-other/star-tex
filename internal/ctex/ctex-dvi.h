@@ -78,6 +78,10 @@ scaled ctex_dvi_get_h(ctex_dvi_t *self);
 
 scaled ctex_dvi_get_v(ctex_dvi_t *self);
 
+void ctex_dvi_font_def(ctex_dvi_t *self, int fid, uint32_t chksum, int32_t size,
+                       int32_t dsize, size_t areasz, const char *area,
+                       size_t namesz, const char *name);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

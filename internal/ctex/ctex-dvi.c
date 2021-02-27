@@ -131,3 +131,25 @@ void ctex_dvi_set_v(ctex_dvi_t *self, scaled v) { self->dvi_v = v; }
 scaled ctex_dvi_get_h(ctex_dvi_t *self) { return self->dvi_h; }
 
 scaled ctex_dvi_get_v(ctex_dvi_t *self) { return self->dvi_v; }
+
+void ctex_dvi_font_def(ctex_dvi_t *self, int fid, uint32_t chksum, int32_t size,
+                       int32_t dsize, size_t areasz, const char *area,
+                       size_t namesz, const char *name) {
+
+  ctex_dvi_wU8(self, 243);
+  ctex_dvi_wU8(self, fid);
+  ctex_dvi_wU8(self, chksum >> 24);
+  ctex_dvi_wU8(self, chksum >> 16);
+  ctex_dvi_wU8(self, chksum >> 8);
+  ctex_dvi_wU8(self, chksum);
+  ctex_dvi_four(self, size);
+  ctex_dvi_four(self, dsize);
+  ctex_dvi_wU8(self, areasz);
+  ctex_dvi_wU8(self, namesz);
+  for (int i = 0; i < areasz; i++) {
+    ctex_dvi_wU8(self, area[i]);
+  }
+  for (int i = 0; i < namesz; i++) {
+    ctex_dvi_wU8(self, name[i]);
+  }
+}
