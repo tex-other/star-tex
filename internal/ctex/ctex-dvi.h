@@ -23,9 +23,9 @@ typedef struct {
   scaled dvi_h;
   scaled dvi_v;
 
-  FILE *dvi_file;
+  FILE *file;
 
-  uint8_t dvi_buf[dvi_buf_size + 1];
+  uint8_t buf[dvi_buf_size + 1];
   dvi_index half_buf;
   dvi_index dvi_limit;
   dvi_index dvi_ptr;
@@ -34,6 +34,13 @@ typedef struct {
 } ctex_dvi_t;
 
 void ctex_dvi_init(ctex_dvi_t *self);
+
+uint8_t ctex_dvi_at(ctex_dvi_t *self, int i);
+void ctex_dvi_set(ctex_dvi_t *self, int i, uint8_t v);
+
+FILE *ctex_dvi_file(ctex_dvi_t *self);
+void ctex_dvi_set_file(ctex_dvi_t *self, FILE *f);
+int ctex_dvi_fclose(ctex_dvi_t *self);
 
 void ctex_dvi_add_page(ctex_dvi_t *self);
 

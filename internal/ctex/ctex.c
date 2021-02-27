@@ -7794,9 +7794,10 @@ void movement(ctex_t *ctx, scaled w, uint8_t o) {
           goto _L45;
         } else {
           k = ctx->mem[p - mem_min + 2].int_ - ctex_dvi_offset(&ctx->dvi_mgr);
-          if (k < 0)
+          if (k < 0) {
             k += dvi_buf_size;
-          ctx->dvi_mgr.dvi_buf[k] += 5;
+          }
+          ctex_dvi_set(&ctx->dvi_mgr, k, ctex_dvi_at(&ctx->dvi_mgr, k) + 5);
           ctx->mem[p - mem_min].hh.lh = 1;
           goto _L40;
         }
@@ -7810,7 +7811,7 @@ void movement(ctex_t *ctx, scaled w, uint8_t o) {
           k = ctx->mem[p - mem_min + 2].int_ - ctex_dvi_offset(&ctx->dvi_mgr);
           if (k < 0)
             k += dvi_buf_size;
-          ctx->dvi_mgr.dvi_buf[k] += 10;
+          ctex_dvi_set(&ctx->dvi_mgr, k, ctex_dvi_at(&ctx->dvi_mgr, k) + 10);
           ctx->mem[p - mem_min].hh.lh = 2;
           goto _L40;
         }
@@ -8523,9 +8524,12 @@ void ship_out(ctex_t *ctx, halfword p) {
     if (!ctx->job_name)
       open_log_file(ctx);
     pack_job_name(ctx, 793);
-    while (!ctx->dvi_mgr.dvi_file && !b_open_out(ctx, &ctx->dvi_mgr.dvi_file))
+    FILE *dvi_file = ctex_dvi_file(&ctx->dvi_mgr);
+    while (!dvi_file && !b_open_out(ctx, &dvi_file)) {
       prompt_file_name(ctx, 794, 793);
-    ctx->output_file_name = b_make_name_string(ctx, ctx->dvi_mgr.dvi_file);
+    }
+    ctex_dvi_set_file(&ctx->dvi_mgr, dvi_file);
+    ctx->output_file_name = b_make_name_string(ctx, dvi_file);
   }
   if (!ctex_dvi_pages(&ctx->dvi_mgr)) {
     ctex_dvi_wU8(&ctx->dvi_mgr, 247);
@@ -18873,7 +18877,9 @@ void close_files_and_terminate(ctex_t *ctx) {
     print(ctx, 839);
     print_int(ctx, ctex_dvi_pos(&ctx->dvi_mgr));
     print(ctx, 840);
-    b_close(ctx, &ctx->dvi_mgr.dvi_file);
+    FILE *dvi = ctex_dvi_file(&ctx->dvi_mgr);
+    b_close(ctx, &dvi);
+    ctex_dvi_set_file(&ctx->dvi_mgr, dvi);
   }
   if (!ctx->log_opened)
     return;
@@ -19303,7 +19309,8 @@ void typeset(ctex_t *ctx, const char *oname, const char *istream,
   ctx->istream = fopen(istream, "r"); // will be closed as term_in
   ctx->ostream = fopen(ostream, "w"); // will be closed as term_out
 
-  ctx->dvi_mgr.dvi_file = fopen(oname, "w");
+  FILE *dvi = fopen(oname, "w");
+  ctex_dvi_set_file(&ctx->dvi_mgr, dvi);
 
   if (setjmp(ctx->_JL9998))
     goto _L9998;
@@ -19409,8 +19416,7 @@ _L9999:
     fclose(ctx->pool_file);
   if (ctx->log_file)
     fclose(ctx->log_file);
-  if (ctx->dvi_mgr.dvi_file)
-    fclose(ctx->dvi_mgr.dvi_file);
+  ctex_dvi_fclose(&ctx->dvi_mgr);
   if (ctx->tfm_file)
     fclose(ctx->tfm_file);
   if (ctx->fmt_file)

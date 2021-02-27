@@ -14,15 +14,32 @@ void ctex_dvi_init(ctex_dvi_t *self) {
   self->dvi_h = 0;
   self->dvi_v = 0;
 
-  self->dvi_file = NULL;
+  self->file = NULL;
 
   for (int k = 0; k < dvi_buf_size + 1; k++) {
-    self->dvi_buf[k] = 0;
+    self->buf[k] = 0;
   }
   self->half_buf = dvi_buf_size / 2;
   self->dvi_limit = dvi_buf_size;
   self->dvi_ptr = 0;
   self->dvi_f = 0;
+}
+
+uint8_t ctex_dvi_at(ctex_dvi_t *self, int i) { return self->buf[i]; }
+
+void ctex_dvi_set(ctex_dvi_t *self, int i, uint8_t v) { self->buf[i] = v; }
+
+FILE *ctex_dvi_file(ctex_dvi_t *self) { return self->file; }
+
+void ctex_dvi_set_file(ctex_dvi_t *self, FILE *f) { self->file = f; }
+
+int ctex_dvi_fclose(ctex_dvi_t *self) {
+  int rc = 0;
+  if (self->file) {
+    rc = fclose(self->file);
+    self->file = NULL;
+  }
+  return rc;
 }
 
 void ctex_dvi_add_page(ctex_dvi_t *self) { self->total_pages++; }
@@ -43,7 +60,7 @@ void ctex_dvi_flush(ctex_dvi_t *self) {
 }
 
 void ctex_dvi_wU8(ctex_dvi_t *self, uint8_t v) {
-  self->dvi_buf[self->dvi_ptr] = v;
+  self->buf[self->dvi_ptr] = v;
   ++self->dvi_ptr;
   if (self->dvi_ptr == self->dvi_limit) {
     ctex_dvi_swap(self);
@@ -66,7 +83,7 @@ void ctex_dvi_swap(ctex_dvi_t *self) {
 void ctex_dvi_write_dvi(ctex_dvi_t *self, dvi_index a, dvi_index b) {
   dvi_index k;
   for (k = a; k < b + 1; ++k) {
-    fprintf(self->dvi_file, "%c", self->dvi_buf[k]);
+    fprintf(self->file, "%c", self->buf[k]);
   }
 }
 
