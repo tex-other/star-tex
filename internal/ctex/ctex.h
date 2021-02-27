@@ -94,7 +94,7 @@ typedef struct {
   integer main_s;
   integer ready_already;
 
-  ctex_dvi_t dvi_mgr;
+  ctex_dvi_t dvi;
   ASCII_code xord[256];
   char xchr[256], name_of_file[file_name_size];
   int name_length;
