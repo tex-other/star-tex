@@ -18,10 +18,10 @@ typedef int dvi_index;
 typedef struct {
   integer total_pages;
   integer dvi_offset;
-  integer dvi_gone;
+  integer dvi_gone; // the number of bytes already output to |dvi_file|
 
-  scaled dvi_h;
-  scaled dvi_v;
+  scaled dvi_h; // current horizontal position
+  scaled dvi_v; // current vertical position
 
   FILE *file;
 
@@ -54,10 +54,6 @@ void ctex_dvi_flush(ctex_dvi_t *self);
 
 void ctex_dvi_wU8(ctex_dvi_t *self, uint8_t v);
 
-void ctex_dvi_swap(ctex_dvi_t *self);
-
-void ctex_dvi_write_dvi(ctex_dvi_t *self, dvi_index a, dvi_index b);
-
 void ctex_dvi_four(ctex_dvi_t *self, integer x);
 
 void ctex_dvi_pop(ctex_dvi_t *self, integer l);
@@ -81,6 +77,28 @@ scaled ctex_dvi_get_v(ctex_dvi_t *self);
 void ctex_dvi_font_def(ctex_dvi_t *self, int fid, uint32_t chksum, int32_t size,
                        int32_t dsize, size_t areasz, const char *area,
                        size_t namesz, const char *name);
+
+void ctex_dvi_wcmd(ctex_dvi_t *self, uint8_t cmd, int32_t v);
+
+// DVI commands
+#define dvi_cmd_set1 128
+#define dvi_cmd_set_rule 132
+#define dvi_cmd_put_rule 137
+#define dvi_cmd_bop 139
+#define dvi_cmd_eop 140
+#define dvi_cmd_push 141
+#define dvi_cmd_pop 142
+#define dvi_cmd_right1 143
+#define dvi_cmd_down1 157
+#define dvi_cmd_fnt_num(x) (170 + x)
+#define dvi_cmd_xxx1 239
+#define dvi_cmd_xxx4 242
+#define dvi_cmd_fnt1 235
+#define dvi_cmd_pre 247
+#define dvi_cmd_post 248
+#define dvi_cmd_post_post 249
+
+#define dvi_version 2
 
 #ifdef __cplusplus
 } /* extern "C" */

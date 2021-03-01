@@ -7765,7 +7765,7 @@ void movement(ctex_t *ctx, scaled w, uint8_t o) {
   halfword q = get_node(ctx, 3);
   ctx->mem[q - mem_min + 1].int_ = w;
   ctx->mem[q - mem_min + 2].int_ = ctex_dvi_pos(&ctx->dvi);
-  if (o == 157) {
+  if (o == dvi_cmd_down1) {
     ctx->mem[q - mem_min].hh.rh = ctx->down_ptr;
     ctx->down_ptr = q;
   } else {
@@ -7835,34 +7835,7 @@ void movement(ctex_t *ctx, scaled w, uint8_t o) {
   }
 _L45:
   ctx->mem[q - mem_min].hh.lh = 3;
-  if (abs(w) >= 8388608) {
-    ctex_dvi_wU8(&ctx->dvi, o + 3);
-    ctex_dvi_four(&ctx->dvi, w);
-    goto _L10;
-  }
-  if (abs(w) >= 32768) {
-    ctex_dvi_wU8(&ctx->dvi, o + 2);
-    if (w < 0) {
-      w += 16777216;
-    }
-    ctex_dvi_wU8(&ctx->dvi, w / 65536);
-    w &= 65535;
-    goto _L2;
-  }
-  if (abs(w) >= 128) {
-    ctex_dvi_wU8(&ctx->dvi, o + 1);
-    if (w < 0)
-      w += 65536;
-    goto _L2;
-  }
-  ctex_dvi_wU8(&ctx->dvi, o);
-  if (w < 0)
-    w += 256;
-  goto _L1;
-_L2:
-  ctex_dvi_wU8(&ctx->dvi, w / 256);
-_L1:
-  ctex_dvi_wU8(&ctx->dvi, w & 255);
+  ctex_dvi_wcmd(&ctx->dvi, o, w);
   goto _L10;
 _L40:
   ctx->mem[q - mem_min].hh.lh = ctx->mem[p - mem_min].hh.lh;
@@ -7924,11 +7897,11 @@ void special_out(ctex_t *ctx, halfword p) {
   char old_setting;
   pool_pointer k, N;
   if (ctx->cur_h != ctex_dvi_get_h(&ctx->dvi)) {
-    movement(ctx, ctx->cur_h - ctex_dvi_get_h(&ctx->dvi), 143);
+    movement(ctx, ctx->cur_h - ctex_dvi_get_h(&ctx->dvi), dvi_cmd_right1);
     ctex_dvi_set_h(&ctx->dvi, ctx->cur_h);
   }
   if (ctx->cur_v != ctex_dvi_get_v(&ctx->dvi)) {
-    movement(ctx, ctx->cur_v - ctex_dvi_get_v(&ctx->dvi), 157);
+    movement(ctx, ctx->cur_v - ctex_dvi_get_v(&ctx->dvi), dvi_cmd_down1);
     ctex_dvi_set_v(&ctx->dvi, ctx->cur_v);
   }
   old_setting = ctx->selector;
@@ -7940,10 +7913,10 @@ void special_out(ctex_t *ctx, halfword p) {
   if (ctx->pool_ptr + 1 > pool_size)
     overflow(ctx, 257, pool_size - ctx->init_pool_ptr);
   if (ctx->pool_ptr - ctx->str_start[ctx->str_ptr] < 256) {
-    ctex_dvi_wU8(&ctx->dvi, 239);
+    ctex_dvi_wU8(&ctx->dvi, dvi_cmd_xxx1);
     ctex_dvi_wU8(&ctx->dvi, ctx->pool_ptr - ctx->str_start[ctx->str_ptr]);
   } else {
-    ctex_dvi_wU8(&ctx->dvi, 242);
+    ctex_dvi_wU8(&ctx->dvi, dvi_cmd_xxx4);
     ctex_dvi_four(&ctx->dvi, ctx->pool_ptr - ctx->str_start[ctx->str_ptr]);
   }
   for (N = ctx->pool_ptr, k = ctx->str_start[ctx->str_ptr]; k <= (N - 1); ++k) {
@@ -8053,7 +8026,7 @@ void hlist_out(ctex_t *ctx) {
   halfword p = ctx->mem[this_box - mem_min + 5].hh.rh;
   ++ctx->cur_s;
   if (ctx->cur_s > 0) {
-    ctex_dvi_wU8(&ctx->dvi, 141);
+    ctex_dvi_wU8(&ctx->dvi, dvi_cmd_push);
   }
   if (ctx->cur_s > ctx->max_push)
     ctx->max_push = ctx->cur_s;
@@ -8064,11 +8037,11 @@ void hlist_out(ctex_t *ctx) {
   _L21:
     if (p >= ctx->hi_mem_min) {
       if (ctx->cur_h != ctex_dvi_get_h(&ctx->dvi)) {
-        movement(ctx, ctx->cur_h - ctex_dvi_get_h(&ctx->dvi), 143);
+        movement(ctx, ctx->cur_h - ctex_dvi_get_h(&ctx->dvi), dvi_cmd_right1);
         ctex_dvi_set_h(&ctx->dvi, ctx->cur_h);
       }
       if (ctx->cur_v != ctex_dvi_get_v(&ctx->dvi)) {
-        movement(ctx, ctx->cur_v - ctex_dvi_get_v(&ctx->dvi), 157);
+        movement(ctx, ctx->cur_v - ctex_dvi_get_v(&ctx->dvi), dvi_cmd_down1);
         ctex_dvi_set_v(&ctx->dvi, ctx->cur_v);
       }
       do {
@@ -8080,15 +8053,15 @@ void hlist_out(ctex_t *ctx) {
             ctx->fnt_infos.font_used[ctx->f] = true;
           }
           if (ctx->f <= 64) {
-            ctex_dvi_wU8(&ctx->dvi, ctx->f + 170);
+            ctex_dvi_wU8(&ctx->dvi, dvi_cmd_fnt_num(ctx->f));
           } else {
-            ctex_dvi_wU8(&ctx->dvi, 235);
+            ctex_dvi_wU8(&ctx->dvi, dvi_cmd_fnt1);
             ctex_dvi_wU8(&ctx->dvi, ctx->f - 1);
           }
           ctex_dvi_set_font(&ctx->dvi, ctx->f);
         }
         if (ctx->c >= 128) {
-          ctex_dvi_wU8(&ctx->dvi, 128);
+          ctex_dvi_wU8(&ctx->dvi, dvi_cmd_set1);
         }
         ctex_dvi_wU8(&ctx->dvi, ctx->c);
         ctx->cur_h +=
@@ -8188,12 +8161,14 @@ void hlist_out(ctex_t *ctx) {
           while (ctx->cur_h + leader_wd <= edge) {
             ctx->cur_v = base_line + ctx->mem[leader_box - mem_min + 4].int_;
             if (ctx->cur_v != ctex_dvi_get_v(&ctx->dvi)) {
-              movement(ctx, ctx->cur_v - ctex_dvi_get_v(&ctx->dvi), 157);
+              movement(ctx, ctx->cur_v - ctex_dvi_get_v(&ctx->dvi),
+                       dvi_cmd_down1);
               ctex_dvi_set_v(&ctx->dvi, ctx->cur_v);
             }
             save_v = ctex_dvi_get_v(&ctx->dvi);
             if (ctx->cur_h != ctex_dvi_get_h(&ctx->dvi)) {
-              movement(ctx, ctx->cur_h - ctex_dvi_get_h(&ctx->dvi), 143);
+              movement(ctx, ctx->cur_h - ctex_dvi_get_h(&ctx->dvi),
+                       dvi_cmd_right1);
               ctex_dvi_set_h(&ctx->dvi, ctx->cur_h);
             }
             save_h = ctex_dvi_get_h(&ctx->dvi);
@@ -8238,15 +8213,15 @@ void hlist_out(ctex_t *ctx) {
     ctx->rule_ht += ctx->rule_dp;
     if ((ctx->rule_ht > 0) && (ctx->rule_wd > 0)) {
       if (ctx->cur_h != ctex_dvi_get_h(&ctx->dvi)) {
-        movement(ctx, ctx->cur_h - ctex_dvi_get_h(&ctx->dvi), 143);
+        movement(ctx, ctx->cur_h - ctex_dvi_get_h(&ctx->dvi), dvi_cmd_right1);
         ctex_dvi_set_h(&ctx->dvi, ctx->cur_h);
       }
       ctx->cur_v = base_line + ctx->rule_dp;
       if (ctx->cur_v != ctex_dvi_get_v(&ctx->dvi)) {
-        movement(ctx, ctx->cur_v - ctex_dvi_get_v(&ctx->dvi), 157);
+        movement(ctx, ctx->cur_v - ctex_dvi_get_v(&ctx->dvi), dvi_cmd_down1);
         ctex_dvi_set_v(&ctx->dvi, ctx->cur_v);
       }
-      ctex_dvi_wU8(&ctx->dvi, 132);
+      ctex_dvi_wU8(&ctx->dvi, dvi_cmd_set_rule);
       ctex_dvi_four(&ctx->dvi, ctx->rule_ht);
       ctex_dvi_four(&ctx->dvi, ctx->rule_wd);
       ctx->cur_v = base_line;
@@ -8275,7 +8250,7 @@ void vlist_out(ctex_t *ctx) {
   halfword p = ctx->mem[this_box - mem_min + 5].hh.rh;
   ++ctx->cur_s;
   if (ctx->cur_s > 0) {
-    ctex_dvi_wU8(&ctx->dvi, 141);
+    ctex_dvi_wU8(&ctx->dvi, dvi_cmd_push);
   }
   if (ctx->cur_s > ctx->max_push)
     ctx->max_push = ctx->cur_s;
@@ -8296,7 +8271,8 @@ void vlist_out(ctex_t *ctx) {
         } else {
           ctx->cur_v += ctx->mem[p - mem_min + 3].int_;
           if (ctx->cur_v != ctex_dvi_get_v(&ctx->dvi)) {
-            movement(ctx, ctx->cur_v - ctex_dvi_get_v(&ctx->dvi), 157);
+            movement(ctx, ctx->cur_v - ctex_dvi_get_v(&ctx->dvi),
+                     dvi_cmd_down1);
             ctex_dvi_set_v(&ctx->dvi, ctx->cur_v);
           }
           save_h = ctex_dvi_get_h(&ctx->dvi);
@@ -8379,13 +8355,15 @@ void vlist_out(ctex_t *ctx) {
             while (ctx->cur_v + leader_ht <= edge) {
               ctx->cur_h = left_edge + ctx->mem[leader_box - mem_min + 4].int_;
               if (ctx->cur_h != ctex_dvi_get_h(&ctx->dvi)) {
-                movement(ctx, ctx->cur_h - ctex_dvi_get_h(&ctx->dvi), 143);
+                movement(ctx, ctx->cur_h - ctex_dvi_get_h(&ctx->dvi),
+                         dvi_cmd_right1);
                 ctex_dvi_set_h(&ctx->dvi, ctx->cur_h);
               }
               save_h = ctex_dvi_get_h(&ctx->dvi);
               ctx->cur_v += ctx->mem[leader_box - mem_min + 3].int_;
               if (ctx->cur_v != ctex_dvi_get_v(&ctx->dvi)) {
-                movement(ctx, ctx->cur_v - ctex_dvi_get_v(&ctx->dvi), 157);
+                movement(ctx, ctx->cur_v - ctex_dvi_get_v(&ctx->dvi),
+                         dvi_cmd_down1);
                 ctex_dvi_set_v(&ctx->dvi, ctx->cur_v);
               }
               save_v = ctex_dvi_get_v(&ctx->dvi);
@@ -8423,14 +8401,14 @@ void vlist_out(ctex_t *ctx) {
       ctx->cur_v += ctx->rule_ht;
       if ((ctx->rule_ht > 0) && (ctx->rule_wd > 0)) {
         if (ctx->cur_h != ctex_dvi_get_h(&ctx->dvi)) {
-          movement(ctx, ctx->cur_h - ctex_dvi_get_h(&ctx->dvi), 143);
+          movement(ctx, ctx->cur_h - ctex_dvi_get_h(&ctx->dvi), dvi_cmd_right1);
           ctex_dvi_set_h(&ctx->dvi, ctx->cur_h);
         }
         if (ctx->cur_v != ctex_dvi_get_v(&ctx->dvi)) {
-          movement(ctx, ctx->cur_v - ctex_dvi_get_v(&ctx->dvi), 157);
+          movement(ctx, ctx->cur_v - ctex_dvi_get_v(&ctx->dvi), dvi_cmd_down1);
           ctex_dvi_set_v(&ctx->dvi, ctx->cur_v);
         }
-        ctex_dvi_wU8(&ctx->dvi, 137);
+        ctex_dvi_wU8(&ctx->dvi, dvi_cmd_put_rule);
         ctex_dvi_four(&ctx->dvi, ctx->rule_ht);
         ctex_dvi_four(&ctx->dvi, ctx->rule_wd);
       }
@@ -8521,8 +8499,8 @@ void ship_out(ctex_t *ctx, halfword p) {
     ctx->output_file_name = b_make_name_string(ctx, dvi_file);
   }
   if (!ctex_dvi_pages(&ctx->dvi)) {
-    ctex_dvi_wU8(&ctx->dvi, 247);
-    ctex_dvi_wU8(&ctx->dvi, 2);
+    ctex_dvi_wU8(&ctx->dvi, dvi_cmd_pre);
+    ctex_dvi_wU8(&ctx->dvi, dvi_version);
     ctex_dvi_four(&ctx->dvi, 25400000);
     ctex_dvi_four(&ctx->dvi, 473628672);
     prepare_mag(ctx);
@@ -8547,7 +8525,7 @@ void ship_out(ctex_t *ctx, halfword p) {
     ctx->pool_ptr = ctx->str_start[ctx->str_ptr];
   }
   page_loc = ctex_dvi_pos(&ctx->dvi);
-  ctex_dvi_wU8(&ctx->dvi, 139);
+  ctex_dvi_wU8(&ctx->dvi, dvi_cmd_bop);
   for (k = 0; k <= 9; ++k) {
     ctex_dvi_four(&ctx->dvi, ctx->eqtb[k + 12218].int_);
   }
@@ -8559,7 +8537,7 @@ void ship_out(ctex_t *ctx, halfword p) {
     vlist_out(ctx);
   else
     hlist_out(ctx);
-  ctex_dvi_wU8(&ctx->dvi, 140);
+  ctex_dvi_wU8(&ctx->dvi, dvi_cmd_eop);
   ctex_dvi_add_page(&ctx->dvi);
   ctx->cur_s = -1;
 _L30:
@@ -18816,9 +18794,9 @@ void close_files_and_terminate(ctex_t *ctx) {
   }
   while (ctx->cur_s > (-1)) {
     if (ctx->cur_s > 0) {
-      ctex_dvi_wU8(&ctx->dvi, 142);
+      ctex_dvi_wU8(&ctx->dvi, dvi_cmd_pop);
     } else {
-      ctex_dvi_wU8(&ctx->dvi, 140);
+      ctex_dvi_wU8(&ctx->dvi, dvi_cmd_eop);
       ctex_dvi_add_page(&ctx->dvi);
     }
     --ctx->cur_s;
@@ -18827,7 +18805,7 @@ void close_files_and_terminate(ctex_t *ctx) {
   if (!npages) {
     print_nl(ctx, 836);
   } else {
-    ctex_dvi_wU8(&ctx->dvi, 248);
+    ctex_dvi_wU8(&ctx->dvi, dvi_cmd_post);
     ctex_dvi_four(&ctx->dvi, ctx->last_bop);
     ctx->last_bop = ctex_dvi_pos(&ctx->dvi) - 5;
     ctex_dvi_four(&ctx->dvi, 25400000);
@@ -18846,9 +18824,9 @@ void close_files_and_terminate(ctex_t *ctx) {
       }
       --ctx->font_ptr;
     }
-    ctex_dvi_wU8(&ctx->dvi, 249);
+    ctex_dvi_wU8(&ctx->dvi, dvi_cmd_post_post);
     ctex_dvi_four(&ctx->dvi, ctx->last_bop);
-    ctex_dvi_wU8(&ctx->dvi, 2);
+    ctex_dvi_wU8(&ctx->dvi, dvi_version);
     k = (ctex_dvi_cap(&ctx->dvi) & 3) + 4;
     while (k > 0) {
       ctex_dvi_wU8(&ctx->dvi, 223);

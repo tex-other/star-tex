@@ -5,6 +5,10 @@
 #include "ctex-dvi.h"
 
 #include <stdio.h>
+#include <stdlib.h>
+
+void ctex_dvi_swap(ctex_dvi_t *self);
+void ctex_dvi_write_dvi(ctex_dvi_t *self, dvi_index a, dvi_index b);
 
 void ctex_dvi_init(ctex_dvi_t *self) {
   self->total_pages = 0;
@@ -99,7 +103,7 @@ void ctex_dvi_pop(ctex_dvi_t *self, integer l) {
     --self->dvi_ptr;
     return;
   }
-  ctex_dvi_wU8(self, 142);
+  ctex_dvi_wU8(self, dvi_cmd_pop);
 }
 
 integer ctex_dvi_pos(ctex_dvi_t *self) {
@@ -142,4 +146,32 @@ void ctex_dvi_font_def(ctex_dvi_t *self, int fid, uint32_t chksum, int32_t size,
   for (int i = 0; i < namesz; i++) {
     ctex_dvi_wU8(self, name[i]);
   }
+}
+
+void ctex_dvi_wcmd(ctex_dvi_t *self, uint8_t cmd, int32_t v) {
+  uint32_t u = abs(v);
+
+  if (u >= (1 << 23)) {
+    ctex_dvi_wU8(self, cmd + 3);
+    ctex_dvi_four(self, v);
+    return;
+  }
+
+  if (u >= (1 << 15)) {
+    ctex_dvi_wU8(self, cmd + 2);
+    ctex_dvi_wU8(self, v >> 16);
+    ctex_dvi_wU8(self, v >> 8);
+    ctex_dvi_wU8(self, v);
+    return;
+  }
+
+  if (u >= (1 << 7)) {
+    ctex_dvi_wU8(self, cmd + 1);
+    ctex_dvi_wU8(self, v >> 8);
+    ctex_dvi_wU8(self, v);
+    return;
+  }
+
+  ctex_dvi_wU8(self, cmd);
+  ctex_dvi_wU8(self, v);
 }
