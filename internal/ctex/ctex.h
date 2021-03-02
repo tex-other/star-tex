@@ -43,6 +43,7 @@
 #include "ctex-consts.h"
 #include "ctex-dvi.h"
 #include "ctex-font-info.h"
+#include "ctex-io.h"
 #include "ctex-types.h"
 
 #ifdef __cplusplus
@@ -104,14 +105,14 @@ typedef struct {
   pool_pointer str_start[max_strings + 1];
 
   int first, last, max_buf_stack;
-  FILE *term_in;
-  FILE *term_out;
+  ctex_file term_in;
+  ctex_file term_out;
   pool_pointer pool_ptr;
   str_number str_ptr;
   pool_pointer init_pool_ptr;
   str_number init_str_ptr;
-  FILE *pool_file;
-  FILE *log_file;
+  ctex_file pool_file;
+  ctex_file log_file;
   char selector, dig[23];
   int term_offset, file_offset;
   ASCII_code trick_buf[error_line + 1];
@@ -150,7 +151,7 @@ typedef struct {
   int input_ptr, max_in_stack;
   in_state_record cur_input;
   int in_open, open_parens;
-  FILE *(input_file[max_in_open + 1]);
+  ctex_file(input_file[max_in_open + 1]);
   integer line_stack[max_in_open + 1];
   char scanner_status;
   halfword warning_index, def_ref, param_stack[param_size + 1];
@@ -163,7 +164,7 @@ typedef struct {
   char cur_val_level;
   small_number radix;
   glue_ord cur_order;
-  FILE *(read_file[16]);
+  ctex_file(read_file[16]);
   char read_open[17];
   halfword cond_ptr;
   char if_limit;
@@ -175,7 +176,7 @@ typedef struct {
   str_number job_name;
   bool_t log_opened;
   str_number output_file_name, log_name;
-  FILE *tfm_file;
+  ctex_file tfm_file;
 
   memory_word font_info[font_mem_size + 1];
   font_index fmem_ptr;
@@ -253,15 +254,15 @@ typedef struct {
   halfword cur_box, after_token;
   bool_t long_help_seen;
   str_number format_ident;
-  FILE *fmt_file;
-  FILE *(write_file[16]);
+  ctex_file fmt_file;
+  ctex_file(write_file[16]);
   bool_t write_open[18];
   halfword write_loc;
 
   jmp_buf _JL9998;
   jmp_buf _JL9999;
-  FILE *istream; // tex engine stdin
-  FILE *ostream; // tex engine stdout
+  ctex_file istream; // tex engine stdin
+  ctex_file ostream; // tex engine stdout
   //
   // inexplicably, p2c forgets these
   int tfm_file_mode;
@@ -292,16 +293,16 @@ void error(ctex_t *ctx);
 void fatal_error(ctex_t *ctx, str_number s);
 void overflow(ctex_t *ctx, str_number s, integer n);
 void confusion(ctex_t *ctx, str_number s);
-bool_t a_open_in(ctex_t *ctx, FILE **f);
-bool_t a_open_out(ctex_t *ctx, FILE **f);
-bool_t b_open_in(ctex_t *ctx, FILE **f);
-bool_t b_open_out(ctex_t *ctx, FILE **f);
-bool_t w_open_in(ctex_t *ctx, FILE **f);
-bool_t w_open_out(ctex_t *ctx, FILE **f);
-void a_close(ctex_t *ctx, FILE **f);
-void b_close(ctex_t *ctx, FILE **f);
-void w_close(ctex_t *ctx, FILE **f);
-bool_t input_ln(ctex_t *ctx, FILE *f, bool_t bypass_eoln);
+bool_t a_open_in(ctex_t *ctx, ctex_file *f);
+bool_t a_open_out(ctex_t *ctx, ctex_file *f);
+bool_t b_open_in(ctex_t *ctx, ctex_file *f);
+bool_t b_open_out(ctex_t *ctx, ctex_file *f);
+bool_t w_open_in(ctex_t *ctx, ctex_file *f);
+bool_t w_open_out(ctex_t *ctx, ctex_file *f);
+void a_close(ctex_t *ctx, ctex_file *f);
+void b_close(ctex_t *ctx, ctex_file *f);
+void w_close(ctex_t *ctx, ctex_file *f);
+bool_t input_ln(ctex_t *ctx, ctex_file f, bool_t bypass_eoln);
 bool_t init_terminal(ctex_t *ctx);
 str_number make_string(ctex_t *ctx);
 bool_t str_eq_buf(ctex_t *ctx, str_number s, integer k);
@@ -433,9 +434,9 @@ void end_name(ctex_t *ctx);
 void pack_file_name(ctex_t *ctx, str_number n, str_number a, str_number e);
 void pack_buffered_name(ctex_t *ctx, small_number n, integer a, integer b);
 str_number make_name_string(ctex_t *ctx);
-str_number a_make_name_string(ctex_t *ctx, FILE *f);
-str_number b_make_name_string(ctex_t *ctx, FILE *f);
-str_number w_make_name_string(ctex_t *ctx, FILE *f);
+str_number a_make_name_string(ctex_t *ctx, ctex_file f);
+str_number b_make_name_string(ctex_t *ctx, ctex_file f);
+str_number w_make_name_string(ctex_t *ctx, ctex_file f);
 void scan_file_name(ctex_t *ctx);
 void pack_job_name(ctex_t *ctx, str_number s);
 void prompt_file_name(ctex_t *ctx, str_number s, str_number e);

@@ -13,15 +13,15 @@ void ctex_init_ctx(ctex_t *ctx) {
   ctx->tfm_file_mode = 0;
   ctx->tfm_file_value = 0;
   ctx->fmt_file_mode = 0;
-  ctx->fmt_file = NULL;
-  ctx->tfm_file = NULL;
-  ctx->log_file = NULL;
-  ctx->pool_file = NULL;
-  ctx->term_out = NULL;
-  ctx->term_in = NULL;
+  ctx->fmt_file = 0;
+  ctx->tfm_file = 0;
+  ctx->log_file = 0;
+  ctx->pool_file = 0;
+  ctx->term_out = 0;
+  ctx->term_in = 0;
 
-  ctx->istream = NULL;
-  ctx->ostream = NULL;
+  ctx->istream = 0;
+  ctx->ostream = 0;
 
   ctx->dvi = ctex_dvi_new();
 }
@@ -284,17 +284,17 @@ void initialize(ctex_t *ctx) {
 void print_ln(ctex_t *ctx) {
   switch (ctx->selector) {
   case 19:
-    fprintf(ctx->term_out, "\n");
-    fprintf(ctx->log_file, "\n");
+    ctex_io_fprintf(ctx->term_out, "\n");
+    ctex_io_fprintf(ctx->log_file, "\n");
     ctx->term_offset = 0;
     ctx->file_offset = 0;
     break;
   case 18:
-    fprintf(ctx->log_file, "\n");
+    ctex_io_fprintf(ctx->log_file, "\n");
     ctx->file_offset = 0;
     break;
   case 17:
-    fprintf(ctx->term_out, "\n");
+    ctex_io_fprintf(ctx->term_out, "\n");
     ctx->term_offset = 0;
     break;
   case 16:
@@ -303,7 +303,7 @@ void print_ln(ctex_t *ctx) {
     // blank case
     break;
   default:
-    fprintf(ctx->write_file[ctx->selector], "\n");
+    ctex_io_fprintf(ctx->write_file[ctx->selector], "\n");
     break;
   }
 }
@@ -317,27 +317,27 @@ void print_char(ctex_t *ctx, ASCII_code s) {
   }
   switch (ctx->selector) {
   case 19:
-    fprintf(ctx->term_out, "%c", ctx->xchr[s]);
-    fprintf(ctx->log_file, "%c", ctx->xchr[s]);
+    ctex_io_fprintfU8(ctx->term_out, "%c", ctx->xchr[s]);
+    ctex_io_fprintfU8(ctx->log_file, "%c", ctx->xchr[s]);
     ++ctx->term_offset;
     ++ctx->file_offset;
     if (ctx->term_offset == max_print_line) {
-      fprintf(ctx->term_out, "\n");
+      ctex_io_fprintf(ctx->term_out, "\n");
       ctx->term_offset = 0;
     }
     if (ctx->file_offset == max_print_line) {
-      fprintf(ctx->log_file, "\n");
+      ctex_io_fprintf(ctx->log_file, "\n");
       ctx->file_offset = 0;
     }
     break;
   case 18:
-    fprintf(ctx->log_file, "%c", ctx->xchr[s]);
+    ctex_io_fprintfU8(ctx->log_file, "%c", ctx->xchr[s]);
     ++ctx->file_offset;
     if (ctx->file_offset == max_print_line)
       print_ln(ctx);
     break;
   case 17:
-    fprintf(ctx->term_out, "%c", ctx->xchr[s]);
+    ctex_io_fprintfU8(ctx->term_out, "%c", ctx->xchr[s]);
     ++ctx->term_offset;
     if (ctx->term_offset == max_print_line)
       print_ln(ctx);
@@ -356,7 +356,7 @@ void print_char(ctex_t *ctx, ASCII_code s) {
     }
     break;
   default:
-    fprintf(ctx->write_file[ctx->selector], "%c", ctx->xchr[s]);
+    ctex_io_fprintfU8(ctx->write_file[ctx->selector], "%c", ctx->xchr[s]);
     break;
   }
   ++ctx->tally;
@@ -672,7 +672,7 @@ void error(ctex_t *ctx) {
         }
         print(ctx, 277);
         print_ln(ctx);
-        fflush(ctx->term_out);
+        ctex_io_fflush(ctx->term_out);
         errno = 0;
         goto _L10;
         break;
@@ -774,89 +774,90 @@ void confusion(ctex_t *ctx, str_number s) {
   jump_out(ctx);
 }
 
-bool_t a_open_in(ctex_t *ctx, FILE **f) {
+bool_t a_open_in(ctex_t *ctx, ctex_file *f) {
   ctex_kpath_ifind(ctx->name_of_file);
-  *f = fopen(trim_name(ctx->name_of_file, file_name_size), "rb");
+  *f = ctex_io_fopen(trim_name(ctx->name_of_file, file_name_size));
   if (!*f) {
     io_error(errno, trim_name(ctx->name_of_file, file_name_size));
   }
   return erstat(*f) == 0;
 }
 
-bool_t a_open_out(ctex_t *ctx, FILE **f) {
+bool_t a_open_out(ctex_t *ctx, ctex_file *f) {
   ctex_kpath_ofind(ctx->name_of_file);
-  *f = fopen(trim_name(ctx->name_of_file, file_name_size), "wb");
+  *f = ctex_io_fcreate(trim_name(ctx->name_of_file, file_name_size));
   if (!*f) {
     io_error(errno, trim_name(ctx->name_of_file, file_name_size));
   }
   return erstat(*f) == 0;
 }
 
-bool_t b_open_in(ctex_t *ctx, FILE **f) {
+bool_t b_open_in(ctex_t *ctx, ctex_file *f) {
   ctex_kpath_ifind(ctx->name_of_file);
-  *f = fopen(trim_name(ctx->name_of_file, file_name_size), "rb");
+  *f = ctex_io_fopen(trim_name(ctx->name_of_file, file_name_size));
   if (!*f) {
     io_error(errno, trim_name(ctx->name_of_file, file_name_size));
   }
   return erstat(*f) == 0;
 }
 
-bool_t b_open_out(ctex_t *ctx, FILE **f) {
+bool_t b_open_out(ctex_t *ctx, ctex_file *f) {
   ctex_kpath_ofind(ctx->name_of_file);
-  *f = fopen(trim_name(ctx->name_of_file, file_name_size), "wb");
+  *f = ctex_io_fcreate(trim_name(ctx->name_of_file, file_name_size));
   if (!*f) {
     io_error(errno, trim_name(ctx->name_of_file, file_name_size));
   }
   return erstat(*f) == 0;
 }
 
-bool_t w_open_in(ctex_t *ctx, FILE **f) {
+bool_t w_open_in(ctex_t *ctx, ctex_file *f) {
   ctex_kpath_ifind(ctx->name_of_file);
-  *f = fopen(trim_name(ctx->name_of_file, file_name_size), "rb");
+  *f = ctex_io_fopen(trim_name(ctx->name_of_file, file_name_size));
   if (!*f) {
     io_error(errno, trim_name(ctx->name_of_file, file_name_size));
   }
   return erstat(*f) == 0;
 }
 
-bool_t w_open_out(ctex_t *ctx, FILE **f) {
+bool_t w_open_out(ctex_t *ctx, ctex_file *f) {
   ctex_kpath_ofind(ctx->name_of_file);
-  *f = fopen(trim_name(ctx->name_of_file, file_name_size), "wb");
+  *f = ctex_io_fcreate(trim_name(ctx->name_of_file, file_name_size));
   if (!*f) {
     io_error(errno, trim_name(ctx->name_of_file, file_name_size));
   }
   return erstat(*f) == 0;
 }
 
-void a_close(ctex_t *ctx, FILE **f) {
+void a_close(ctex_t *ctx, ctex_file *f) {
   if (*f) {
-    fclose(*f);
+    ctex_io_fclose(*f);
   }
-  *f = NULL;
+  *f = 0;
 }
 
-void b_close(ctex_t *ctx, FILE **f) {
+void b_close(ctex_t *ctx, ctex_file *f) {
   if (*f) {
-    fclose(*f);
+    ctex_io_fclose(*f);
   }
-  *f = NULL;
+  *f = 0;
 }
 
-void w_close(ctex_t *ctx, FILE **f) {
+void w_close(ctex_t *ctx, ctex_file *f) {
   if (*f) {
-    fclose(*f);
+    ctex_io_fclose(*f);
   }
-  *f = NULL;
+  *f = 0;
 }
 
-bool_t input_ln(ctex_t *ctx, FILE *f, bool_t bypass_eoln) {
+bool_t input_ln(ctex_t *ctx, ctex_file f, bool_t bypass_eoln) {
   int last_nonblank;
   if (bypass_eoln) {
-    if (!feof(f))
-      fgetc(f);
+    if (!ctex_io_feof(f)) {
+      ctex_io_fgetc(f);
+    }
   }
   ctx->last = ctx->first;
-  if (feof(f)) {
+  if (ctex_io_feof(f)) {
     return false;
   } else {
     last_nonblank = ctx->first;
@@ -865,7 +866,7 @@ bool_t input_ln(ctex_t *ctx, FILE *f, bool_t bypass_eoln) {
         ctx->max_buf_stack = ctx->last + 1;
         if (ctx->max_buf_stack == buf_size) {
           if (!ctx->format_ident) {
-            fprintf(ctx->term_out, "Buffer size exceeded!\n");
+            ctex_io_fprintf(ctx->term_out, "Buffer size exceeded!\n");
             longjmp(ctx->_JL9999, 1);
           } else {
             ctx->cur_input.loc_field = ctx->first;
@@ -875,7 +876,7 @@ bool_t input_ln(ctex_t *ctx, FILE *f, bool_t bypass_eoln) {
         }
       }
       ctx->buffer[ctx->last] = ctx->xord[fpeek(f)];
-      fgetc(f);
+      ctex_io_fgetc(f);
       ++ctx->last;
       if (ctx->buffer[ctx->last - 1] != 32)
         last_nonblank = ctx->last;
@@ -891,11 +892,11 @@ bool_t init_terminal(ctex_t *ctx) {
   if (!ctx->term_in)
     io_error(errno, "TTY:");
   while (true) {
-    fprintf(ctx->term_out, "**");
-    fflush(ctx->term_out);
+    ctex_io_fprintf(ctx->term_out, "**");
+    ctex_io_fflush(ctx->term_out);
     errno = 0;
     if (!input_ln(ctx, ctx->term_in, true)) {
-      fprintf(ctx->term_out, "\n! End of file on the terminal... why?");
+      ctex_io_fprintf(ctx->term_out, "\n! End of file on the terminal... why?");
       result = false;
       goto _L10;
     }
@@ -907,7 +908,8 @@ bool_t init_terminal(ctex_t *ctx) {
       result = true;
       goto _L10;
     }
-    fprintf(ctx->term_out, "Please type the name of your input file.\n");
+    ctex_io_fprintf(ctx->term_out,
+                    "Please type the name of your input file.\n");
   }
 _L10:
   return result;
@@ -1007,27 +1009,27 @@ bool_t get_strings_started(ctex_t *ctx) {
   // memcpy(name_of_file, pool_name, file_name_size); // FIXME(sbinet)
   memcpy(ctx->name_of_file, pool_name, 13);
   if (!a_open_in(ctx, &ctx->pool_file)) {
-    fprintf(ctx->term_out, "! I can't read tex.pool.\n");
+    ctex_io_fprintf(ctx->term_out, "! I can't read tex.pool.\n");
     a_close(ctx, &ctx->pool_file);
     result = false;
     goto _L10;
   }
   do {
-    if (feof(ctx->pool_file)) {
-      fprintf(ctx->term_out, "! tex.pool has no check sum.\n");
+    if (ctex_io_feof(ctx->pool_file)) {
+      ctex_io_fprintf(ctx->term_out, "! tex.pool has no check sum.\n");
       a_close(ctx, &ctx->pool_file);
       result = false;
       goto _L10;
     }
-    fread(&m, sizeof(char), 1, ctx->pool_file);
-    fread(&n, sizeof(char), 1, ctx->pool_file);
+    m = ctex_io_readU8(ctx->pool_file);
+    n = ctex_io_readU8(ctx->pool_file);
     if (m == '*') {
       a = 0;
       k = 1;
       while (true) {
         if ((ctx->xord[n] < 48) || (ctx->xord[n] > 57)) {
-          fprintf(ctx->term_out,
-                  "! tex.pool check sum doesn't have nine digits.\n");
+          ctex_io_fprintf(ctx->term_out,
+                          "! tex.pool check sum doesn't have nine digits.\n");
           a_close(ctx, &ctx->pool_file);
           result = false;
           goto _L10;
@@ -1036,11 +1038,12 @@ bool_t get_strings_started(ctex_t *ctx) {
         if (k == 9)
           goto _L30;
         ++k;
-        fread(&n, sizeof(char), 1, ctx->pool_file);
+        n = ctex_io_readU8(ctx->pool_file);
       }
     _L30:
       if (a != 117275187) {
-        fprintf(ctx->term_out, "! tex.pool doesn't match; TANGLE me again.\n");
+        ctex_io_fprintf(ctx->term_out,
+                        "! tex.pool doesn't match; TANGLE me again.\n");
         a_close(ctx, &ctx->pool_file);
         result = false;
         goto _L10;
@@ -1049,15 +1052,15 @@ bool_t get_strings_started(ctex_t *ctx) {
     } else {
       if ((ctx->xord[m] < 48) || (ctx->xord[m] > 57) || (ctx->xord[n] < 48) ||
           (ctx->xord[n] > 57)) {
-        fprintf(ctx->term_out,
-                "! tex.pool line doesn't begin with two digits.\n");
+        ctex_io_fprintf(ctx->term_out,
+                        "! tex.pool line doesn't begin with two digits.\n");
         a_close(ctx, &ctx->pool_file);
         result = false;
         goto _L10;
       }
       l = (ctx->xord[m] * 10) + ctx->xord[n] - 528;
       if (ctx->pool_ptr + l + string_vacancies > pool_size) {
-        fprintf(ctx->term_out, "! You have to increase POOLSIZE.\n");
+        ctex_io_fprintf(ctx->term_out, "! You have to increase POOLSIZE.\n");
         a_close(ctx, &ctx->pool_file);
         result = false;
         goto _L10;
@@ -1066,11 +1069,11 @@ bool_t get_strings_started(ctex_t *ctx) {
         if (eoln(ctx->pool_file))
           m = ' ';
         else
-          fread(&m, sizeof(char), 1, ctx->pool_file);
+          m = ctex_io_readU8(ctx->pool_file);
         ctx->str_pool[ctx->pool_ptr] = ctx->xord[m];
         ++ctx->pool_ptr;
       }
-      fgetc(ctx->pool_file); // skip the newline
+      ctex_io_fgetc(ctx->pool_file); // skip the newline
       g = make_string(ctx);
     }
   } while (!c);
@@ -1135,7 +1138,7 @@ void print_current_string(ctex_t *ctx) {
 
 void term_input(ctex_t *ctx) {
   int k, N;
-  fflush(ctx->term_out);
+  ctex_io_fflush(ctx->term_out);
   errno = 0;
   if (!input_ln(ctx, ctx->term_in, true))
     fatal_error(ctx, 261);
@@ -4549,7 +4552,7 @@ _L20:
         if (ctx->force_eof) {
           print_char(ctx, 41);
           --ctx->open_parens;
-          fflush(ctx->term_out);
+          ctex_io_fflush(ctx->term_out);
           errno = 0;
           ctx->force_eof = false;
           end_file_reading(ctx);
@@ -7057,15 +7060,15 @@ str_number make_name_string(ctex_t *ctx) {
   }
 }
 
-str_number a_make_name_string(ctex_t *ctx, FILE *f) {
+str_number a_make_name_string(ctex_t *ctx, ctex_file f) {
   return make_name_string(ctx);
 }
 
-str_number b_make_name_string(ctex_t *ctx, FILE *f) {
+str_number b_make_name_string(ctex_t *ctx, ctex_file f) {
   return make_name_string(ctx);
 }
 
-str_number w_make_name_string(ctex_t *ctx, FILE *f) {
+str_number w_make_name_string(ctex_t *ctx, ctex_file f) {
   return make_name_string(ctx);
 }
 
@@ -7149,7 +7152,7 @@ void open_log_file(ctex_t *ctx) {
   ctx->log_name = a_make_name_string(ctx, ctx->log_file);
   ctx->selector = 18;
   ctx->log_opened = true;
-  fprintf(ctx->log_file, "This is TeX, Version 3.14159265");
+  ctex_io_fprintf(ctx->log_file, "This is TeX, Version 3.14159265");
   slow_print(ctx, ctx->format_ident);
   print(ctx, 799);
   print_int(ctx, ctx->eqtb[12184].int_);
@@ -7157,7 +7160,7 @@ void open_log_file(ctex_t *ctx) {
   memcpy(months, "JANFEBMARAPRMAYJUNJULAUGSEPOCTNOVDEC", 36);
   for (N = ctx->eqtb[12185].int_ * 3, k = (ctx->eqtb[12185].int_ * 3) - 2;
        k <= N; ++k)
-    fprintf(ctx->log_file, "%c", months[k - 1]);
+    ctex_io_fprintfU8(ctx->log_file, "%c", months[k - 1]);
   print_char(ctx, 32);
   print_int(ctx, ctx->eqtb[12186].int_);
   print_char(ctx, 32);
@@ -7208,7 +7211,7 @@ _L30:
   print_char(ctx, 40);
   ++ctx->open_parens;
   slow_print(ctx, ctx->cur_input.name_field);
-  fflush(ctx->term_out);
+  ctex_io_fflush(ctx->term_out);
   errno = 0;
   ctx->cur_input.state_field = 33;
   if (ctx->cur_input.name_field == (ctx->str_ptr - 1)) {
@@ -7473,9 +7476,9 @@ internal_font_number read_font_info(ctex_t *ctx, halfword u, str_number nom,
   for (N = ctx->fnt_infos.lig_kern_base[f], k = ctx->fnt_infos.width_base[f];
        k <= (N - 1); ++k) {
     loadU8(ctx->tfm_file, &ctx->tfm_file_mode, &ctx->tfm_file_value);
-    fread(&a, sizeof(uint8_t), 1, ctx->tfm_file);
-    fread(&b, sizeof(uint8_t), 1, ctx->tfm_file);
-    fread(&c, sizeof(uint8_t), 1, ctx->tfm_file);
+    a = ctex_io_readU8(ctx->tfm_file);
+    b = ctex_io_readU8(ctx->tfm_file);
+    c = ctex_io_readU8(ctx->tfm_file);
     d = *readU8(ctx->tfm_file, &ctx->tfm_file_mode, &ctx->tfm_file_value);
     sw = ((((d * z / 256) + (c * z)) / 256) + (b * z)) / beta;
     if (!a) {
@@ -7546,9 +7549,9 @@ internal_font_number read_font_info(ctex_t *ctx, halfword u, str_number nom,
       k = ctx->fnt_infos.kern_base[f] + 32768;
        k <= (N - 1); ++k) {
     loadU8(ctx->tfm_file, &ctx->tfm_file_mode, &ctx->tfm_file_value);
-    fread(&a, sizeof(uint8_t), 1, ctx->tfm_file);
-    fread(&b, sizeof(uint8_t), 1, ctx->tfm_file);
-    fread(&c, sizeof(uint8_t), 1, ctx->tfm_file);
+    a = ctex_io_readU8(ctx->tfm_file);
+    b = ctex_io_readU8(ctx->tfm_file);
+    c = ctex_io_readU8(ctx->tfm_file);
     d = *readU8(ctx->tfm_file, &ctx->tfm_file_mode, &ctx->tfm_file_value);
     sw = ((((d * z / 256) + (c * z)) / 256) + (b * z)) / beta;
     if (!a) {
@@ -7619,9 +7622,9 @@ internal_font_number read_font_info(ctex_t *ctx, halfword u, str_number nom,
            16);
     } else {
       loadU8(ctx->tfm_file, &ctx->tfm_file_mode, &ctx->tfm_file_value);
-      fread(&a, sizeof(uint8_t), 1, ctx->tfm_file);
-      fread(&b, sizeof(uint8_t), 1, ctx->tfm_file);
-      fread(&c, sizeof(uint8_t), 1, ctx->tfm_file);
+      a = ctex_io_readU8(ctx->tfm_file);
+      b = ctex_io_readU8(ctx->tfm_file);
+      c = ctex_io_readU8(ctx->tfm_file);
       d = *readU8(ctx->tfm_file, &ctx->tfm_file_mode, &ctx->tfm_file_value);
       sw = ((((d * z / 256) + (c * z)) / 256) + (b * z)) / beta;
       if (!a) {
@@ -7632,7 +7635,7 @@ internal_font_number read_font_info(ctex_t *ctx, halfword u, str_number nom,
         goto _L11;
     }
   }
-  if (feof(ctx->tfm_file))
+  if (ctex_io_feof(ctx->tfm_file))
     goto _L11;
   for (k = np + 1; k <= 7; ++k)
     ctx->font_info[ctx->fnt_infos.param_base[f] + k - 1].int_ = 0;
@@ -7693,15 +7696,6 @@ _L11:
 _L30:
   if (file_opened)
     b_close(ctx, &ctx->tfm_file);
-  {
-    const char *tfm_fname = trim_name(ctx->name_of_file, file_name_size);
-    int nnn = cgo_load_tfm_file(tfm_fname);
-    if (nnn < 0) {
-      fprintf(stderr, "could not load TFM file [%s]!\n", tfm_fname);
-      fprintf(stderr, ">>> n-glyphs: %d\n", nnn);
-      fprintf(stderr, ">>> font-id:  %d\n", g);
-    }
-  }
   return g;
 }
 
@@ -8448,7 +8442,7 @@ void ship_out(ctex_t *ctx, halfword p) {
     if (k < j)
       print_char(ctx, 46);
   }
-  fflush(ctx->term_out);
+  ctex_io_fflush(ctx->term_out);
   errno = 0;
   if (ctx->eqtb[12197].int_ > 0) {
     print_char(ctx, 93);
@@ -8491,7 +8485,7 @@ void ship_out(ctex_t *ctx, halfword p) {
     if (!ctx->job_name)
       open_log_file(ctx);
     pack_job_name(ctx, 793);
-    FILE *dvi_file = ctex_dvi_file(ctx->dvi);
+    ctex_file dvi_file = ctex_dvi_file(ctx->dvi);
     while (!dvi_file && !b_open_out(ctx, &dvi_file)) {
       prompt_file_name(ctx, 794, 793);
     }
@@ -8544,7 +8538,7 @@ _L30:
   if (ctx->eqtb[12197].int_ <= 0)
     print_char(ctx, 93);
   ctx->dead_cycles = 0;
-  fflush(ctx->term_out);
+  ctex_io_fflush(ctx->term_out);
   errno = 0;
   flush_node_list(ctx, p);
 }
@@ -16623,7 +16617,7 @@ void issue_message(ctex_t *ctx) {
     } else if ((ctx->term_offset > 0) || (ctx->file_offset > 0))
       print_char(ctx, 32);
     slow_print(ctx, s);
-    fflush(ctx->term_out);
+    ctex_io_fflush(ctx->term_out);
     errno = 0;
   } else {
     print_nl(ctx, 262);
@@ -16838,8 +16832,9 @@ void store_fmt_file(ctex_t *ctx) {
   writeU32(ctx->fmt_file, &ctx->fmt_file_mode, &ctx->fmt_file_value);
   q = ctx->rover;
   do {
-    for (k = p; k <= (q + 1); ++k)
-      fwrite((&ctx->mem[k - mem_min]), sizeof(memory_word), 1, ctx->fmt_file);
+    for (k = p; k <= (q + 1); ++k) {
+      ctex_io_writeU32(ctx->fmt_file, ctx->mem[k - mem_min].int_);
+    }
 
     x += q - p + 2;
     ctx->var_used += q - p;
@@ -16848,8 +16843,9 @@ void store_fmt_file(ctex_t *ctx) {
   } while (q != ctx->rover);
   ctx->var_used += ctx->lo_mem_max - p;
   ctx->dyn_used = ctx->mem_end - ctx->hi_mem_min + 1;
-  for (N = ctx->lo_mem_max, k = p; k <= N; ++k)
-    fwrite((&ctx->mem[k - mem_min]), sizeof(memory_word), 1, ctx->fmt_file);
+  for (N = ctx->lo_mem_max, k = p; k <= N; ++k) {
+    ctex_io_writeU32(ctx->fmt_file, ctx->mem[k - mem_min].int_);
+  }
   x += ctx->lo_mem_max - p + 1;
   readU32(ctx->fmt_file, &ctx->fmt_file_mode, &ctx->fmt_file_value)->int_ =
       ctx->hi_mem_min;
@@ -16857,8 +16853,9 @@ void store_fmt_file(ctex_t *ctx) {
   readU32(ctx->fmt_file, &ctx->fmt_file_mode, &ctx->fmt_file_value)->int_ =
       ctx->avail;
   writeU32(ctx->fmt_file, &ctx->fmt_file_mode, &ctx->fmt_file_value);
-  for (N = ctx->mem_end, k = ctx->hi_mem_min; k <= N; ++k)
-    fwrite((&ctx->mem[k - mem_min]), sizeof(memory_word), 1, ctx->fmt_file);
+  for (N = ctx->mem_end, k = ctx->hi_mem_min; k <= N; ++k) {
+    ctex_io_writeU32(ctx->fmt_file, ctx->mem[k - mem_min].int_);
+  }
   x += ctx->mem_end - ctx->hi_mem_min + 1;
   p = ctx->avail;
   while (p != (-1073741824)) {
@@ -16904,7 +16901,7 @@ void store_fmt_file(ctex_t *ctx) {
         l - k;
     writeU32(ctx->fmt_file, &ctx->fmt_file_mode, &ctx->fmt_file_value);
     while (k < l) {
-      fwrite((&ctx->eqtb[k]), sizeof(memory_word), 1, ctx->fmt_file);
+      ctex_io_writeU32(ctx->fmt_file, ctx->eqtb[k].int_);
       ++k;
     }
     k = j + 1;
@@ -16934,7 +16931,7 @@ void store_fmt_file(ctex_t *ctx) {
         l - k;
     writeU32(ctx->fmt_file, &ctx->fmt_file_mode, &ctx->fmt_file_value);
     while (k < l) {
-      fwrite((&ctx->eqtb[k]), sizeof(memory_word), 1, ctx->fmt_file);
+      ctex_io_writeU32(ctx->fmt_file, ctx->eqtb[k].int_);
       ++k;
     }
     k = j + 1;
@@ -16977,8 +16974,9 @@ void store_fmt_file(ctex_t *ctx) {
   readU32(ctx->fmt_file, &ctx->fmt_file_mode, &ctx->fmt_file_value)->int_ =
       ctx->fmem_ptr;
   writeU32(ctx->fmt_file, &ctx->fmt_file_mode, &ctx->fmt_file_value);
-  for (N = ctx->fmem_ptr, k = 0; k < N; ++k)
-    fwrite((&ctx->font_info[k]), sizeof(memory_word), 1, ctx->fmt_file);
+  for (N = ctx->fmem_ptr, k = 0; k < N; ++k) {
+    ctex_io_writeU32(ctx->fmt_file, ctx->font_info[k].int_);
+  }
   readU32(ctx->fmt_file, &ctx->fmt_file_mode, &ctx->fmt_file_value)->int_ =
       ctx->font_ptr;
   writeU32(ctx->fmt_file, &ctx->fmt_file_mode, &ctx->fmt_file_value);
@@ -18360,14 +18358,14 @@ bool_t open_fmt_file(ctex_t *ctx) {
     pack_buffered_name(ctx, 11, ctx->cur_input.loc_field, j - 1);
     if (w_open_in(ctx, &ctx->fmt_file))
       goto _L40;
-    fprintf(ctx->term_out,
-            "Sorry, I can't find that format; will try PLAIN.\n");
-    fflush(ctx->term_out);
+    ctex_io_fprintf(ctx->term_out,
+                    "Sorry, I can't find that format; will try PLAIN.\n");
+    ctex_io_fflush(ctx->term_out);
     errno = 0;
   }
   pack_buffered_name(ctx, 16, 1, 0);
   if (!w_open_in(ctx, &ctx->fmt_file)) {
-    fprintf(ctx->term_out, "I can't find the PLAIN format file!\n");
+    ctex_io_fprintf(ctx->term_out, "I can't find the PLAIN format file!\n");
     result = false;
     goto _L10;
   }
@@ -18413,7 +18411,7 @@ bool_t load_fmt_file(ctex_t *ctx) {
   if (x < 0)
     goto _L6666;
   if (x > pool_size) {
-    fprintf(ctx->term_out, "---! Must increase the string pool size\n");
+    ctex_io_fprintf(ctx->term_out, "---! Must increase the string pool size\n");
     goto _L6666;
   }
   ctx->pool_ptr = x;
@@ -18422,7 +18420,7 @@ bool_t load_fmt_file(ctex_t *ctx) {
   if (x < 0)
     goto _L6666;
   if (x > max_strings) {
-    fprintf(ctx->term_out, "---! Must increase the max strings\n");
+    ctex_io_fprintf(ctx->term_out, "---! Must increase the max strings\n");
     goto _L6666;
   }
   ctx->str_ptr = x;
@@ -18575,7 +18573,7 @@ bool_t load_fmt_file(ctex_t *ctx) {
   if (x < 7)
     goto _L6666;
   if (x > font_mem_size) {
-    fprintf(ctx->term_out, "---! Must increase the font mem size\n");
+    ctex_io_fprintf(ctx->term_out, "---! Must increase the font mem size\n");
     goto _L6666;
   }
   ctx->fmem_ptr = x;
@@ -18589,7 +18587,7 @@ bool_t load_fmt_file(ctex_t *ctx) {
   if (x < 0)
     goto _L6666;
   if (x > font_max) {
-    fprintf(ctx->term_out, "---! Must increase the font max\n");
+    ctex_io_fprintf(ctx->term_out, "---! Must increase the font max\n");
     goto _L6666;
   }
   ctx->font_ptr = x;
@@ -18709,7 +18707,7 @@ bool_t load_fmt_file(ctex_t *ctx) {
   if (x < 0)
     goto _L6666;
   if (x > trie_size) {
-    fprintf(ctx->term_out, "---! Must increase the trie size\n");
+    ctex_io_fprintf(ctx->term_out, "---! Must increase the trie size\n");
     goto _L6666;
   }
   j = x;
@@ -18724,7 +18722,7 @@ bool_t load_fmt_file(ctex_t *ctx) {
   if (x < 0)
     goto _L6666;
   if (x > trie_op_size) {
-    fprintf(ctx->term_out, "---! Must increase the trie op size\n");
+    ctex_io_fprintf(ctx->term_out, "---! Must increase the trie op size\n");
     goto _L6666;
   }
   j = x;
@@ -18776,11 +18774,11 @@ bool_t load_fmt_file(ctex_t *ctx) {
   ctx->format_ident = x;
   loadU32(ctx->fmt_file, &ctx->fmt_file_mode, &ctx->fmt_file_value);
   x = readU32(ctx->fmt_file, &ctx->fmt_file_mode, &ctx->fmt_file_value)->int_;
-  if ((x != 69069) || feof(ctx->fmt_file))
+  if ((x != 69069) || ctex_io_feof(ctx->fmt_file))
     goto _L6666;
   goto _L10;
 _L6666:
-  fprintf(ctx->term_out, "(Fatal format file error; I'm stymied)\n");
+  ctex_io_fprintf(ctx->term_out, "(Fatal format file error; I'm stymied)\n");
   result = false;
 _L10:
   return result;
@@ -18844,13 +18842,13 @@ void close_files_and_terminate(ctex_t *ctx) {
     print(ctx, 839);
     print_int(ctx, ctex_dvi_pos(ctx->dvi));
     print(ctx, 840);
-    FILE *dvi = ctex_dvi_file(ctx->dvi);
+    ctex_file dvi = ctex_dvi_file(ctx->dvi);
     b_close(ctx, &dvi);
     ctex_dvi_set_file(ctx->dvi, dvi);
   }
   if (!ctx->log_opened)
     return;
-  fprintf(ctx->log_file, "\n");
+  ctex_io_fprintf(ctx->log_file, "\n");
   a_close(ctx, &ctx->log_file);
   ctx->selector -= 2;
   if (ctx->selector != 17)
@@ -19273,10 +19271,10 @@ void init_prim(ctex_t *ctx) {
 
 void typeset(ctex_t *ctx, const char *oname, const char *istream,
              const char *ostream) {
-  ctx->istream = fopen(istream, "r"); // will be closed as term_in
-  ctx->ostream = fopen(ostream, "w"); // will be closed as term_out
+  ctx->istream = ctex_io_fopen(istream);   // will be closed as term_in
+  ctx->ostream = ctex_io_fcreate(ostream); // will be closed as term_out
 
-  FILE *dvi = fopen(oname, "w");
+  ctex_file dvi = ctex_io_fcreate(oname);
   ctex_dvi_set_file(ctx->dvi, dvi);
 
   if (setjmp(ctx->_JL9998))
@@ -19302,14 +19300,14 @@ _L1:
   ctx->tally = 0;
   ctx->term_offset = 0;
   ctx->file_offset = 0;
-  fprintf(ctx->term_out, "This is TeX, Version 3.14159265");
+  ctex_io_fprintf(ctx->term_out, "This is TeX, Version 3.14159265");
   if (!ctx->format_ident) {
-    fprintf(ctx->term_out, " (no format preloaded)\n");
+    ctex_io_fprintf(ctx->term_out, " (no format preloaded)\n");
   } else {
     slow_print(ctx, ctx->format_ident);
     print_ln(ctx);
   }
-  fflush(ctx->term_out);
+  ctex_io_fflush(ctx->term_out);
   errno = 0;
   ctx->job_name = 0;
   ctx->name_in_progress = false;
@@ -19375,18 +19373,12 @@ _L9998:
   close_files_and_terminate(ctx);
 _L9999:
   ctx->ready_already = 0;
-  if (ctx->term_in)
-    fclose(ctx->term_in);
-  if (ctx->term_out)
-    fclose(ctx->term_out);
-  if (ctx->pool_file)
-    fclose(ctx->pool_file);
-  if (ctx->log_file)
-    fclose(ctx->log_file);
+  ctex_io_fclose(ctx->term_in);
+  ctex_io_fclose(ctx->term_out);
+  ctex_io_fclose(ctx->pool_file);
+  ctex_io_fclose(ctx->log_file);
   ctex_dvi_fclose(ctx->dvi);
-  if (ctx->tfm_file)
-    fclose(ctx->tfm_file);
-  if (ctx->fmt_file)
-    fclose(ctx->fmt_file);
+  ctex_io_fclose(ctx->tfm_file);
+  ctex_io_fclose(ctx->fmt_file);
   return;
 }

@@ -9,7 +9,7 @@ package ctex
 import "C"
 
 import (
-	"unsafe"
+	"log"
 )
 
 type ctex_dvi_t int
@@ -26,7 +26,7 @@ type DVI struct {
 	h int32 // current horizontal position
 	v int32 // current vertical position
 
-	f *C.FILE
+	f ctex_file
 
 	buf      [C.dvi_buf_size + 1]uint8
 	half_buf int32
@@ -37,8 +37,7 @@ type DVI struct {
 }
 
 func (dvi *DVI) write(beg, end int32) {
-	buf := unsafe.Pointer(&dvi.buf[beg])
-	C.fwrite(buf, 1, C.size_t(end+1-beg), dvi.f)
+	_, _ = dvi.f.get().Write(dvi.buf[beg : end+1])
 }
 
 func (dvi *DVI) swap() {
@@ -100,12 +99,12 @@ func ctex_dvi_set(self ctex_dvi_t, i C.int, v uint8) {
 }
 
 //export ctex_dvi_file
-func ctex_dvi_file(self ctex_dvi_t) *C.FILE {
+func ctex_dvi_file(self ctex_dvi_t) ctex_file {
 	return self.get().f
 }
 
 //export ctex_dvi_set_file
-func ctex_dvi_set_file(self ctex_dvi_t, f *C.FILE) {
+func ctex_dvi_set_file(self ctex_dvi_t, f ctex_file) {
 	self.get().f = f
 }
 
@@ -115,9 +114,21 @@ func ctex_dvi_fclose(self ctex_dvi_t) int {
 		rc  int
 		dvi = self.get()
 	)
-	if dvi.f != nil {
-		rc = int(C.fclose(dvi.f))
-		dvi.f = nil
+	defer func() { dvi.f = 0 }()
+
+	if dvi.f <= 0 {
+		return rc
+	}
+
+	f := dvi.f.get()
+	if f == nil {
+		return rc
+	}
+
+	err := f.Close()
+	if err != nil {
+		log.Printf("ctex: could not close DVI file %q: %+v", f.f.Name(), err)
+		rc = 1
 	}
 	return rc
 }

@@ -10,9 +10,8 @@ extern "C" {
 #endif
 
 #include "ctex-consts.h"
+#include "ctex-io.h"
 #include "ctex-types.h"
-
-#include <stdio.h>
 
 typedef int dvi_index;
 typedef int ctex_dvi_t;
@@ -22,8 +21,8 @@ ctex_dvi_t ctex_dvi_new();
 uint8_t ctex_dvi_at(ctex_dvi_t self, int i);
 void ctex_dvi_set(ctex_dvi_t self, int i, uint8_t v);
 
-FILE *ctex_dvi_file(ctex_dvi_t self);
-void ctex_dvi_set_file(ctex_dvi_t self, FILE *f);
+ctex_file ctex_dvi_file(ctex_dvi_t self);
+void ctex_dvi_set_file(ctex_dvi_t self, ctex_file f);
 int ctex_dvi_fclose(ctex_dvi_t self);
 
 void ctex_dvi_add_page(ctex_dvi_t self);
