@@ -104,7 +104,7 @@ func (pr *pngRenderer) DrawGlyph(x, y int32, font dvi.Font, glyph rune, c color.
 		if pr.err != nil {
 			return
 		}
-		pr.err = fmt.Errorf("could not find glyph 0x%02x")
+		pr.err = fmt.Errorf("could not find glyph 0x%02x", glyph)
 		return
 	}
 	_ = adv
