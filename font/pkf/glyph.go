@@ -6,6 +6,7 @@ package pkf
 
 import (
 	"fmt"
+	"image"
 
 	"star-tex.org/x/tex/internal/iobuf"
 )
@@ -36,6 +37,43 @@ func (g *Glyph) unpack() {
 		g: g,
 	}
 	g.mask = gr.unpack()
+}
+
+func (g *Glyph) Mask() image.Alpha {
+	g.unpack()
+	h := int(g.height)
+	w := int(g.width)
+	pix := make([]byte, 0, h*w)
+	var i int
+	for row := 0; row < h; row++ {
+		for col := 0; col < w; col += 8 {
+			v := g.mask[i]
+			n := clip(w-col, 8)
+			bit := uint8(1 << 7)
+			for ; n > 0; n-- {
+				switch {
+				case v&bit != 0:
+					pix = append(pix, 0xff)
+				default:
+					pix = append(pix, 0x00)
+				}
+				bit >>= 1
+			}
+			i++
+		}
+	}
+
+	return image.Alpha{
+		Stride: w,
+		Pix:    pix,
+		Rect:   image.Rect(0, 0, w, h),
+	}
+}
+
+func (g *Glyph) Bounds() image.Rectangle {
+	h := int(g.height)
+	w := int(g.width)
+	return image.Rect(0, 0, w, h)
 }
 
 func readGlyph(r *iobuf.Reader) (g Glyph, err error) {
@@ -379,15 +417,4 @@ func (gr *glyphReader) getbit() bool {
 		gr.bitweight = 128
 	}
 	return gr.inputbyte&gr.bitweight != 0
-}
-
-func (gr *glyphReader) set(sli []bool, v bool) {
-	for i := range sli {
-		sli[i] = v
-	}
-}
-
-func (gr *glyphReader) slice(bitmap []bool, row, beg, end uint32) []bool {
-	i := gr.g.width * row
-	return bitmap[i+beg : i+end]
 }

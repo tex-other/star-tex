@@ -95,10 +95,30 @@ func (fnt *Font) NumGlyphs() int {
 	return len(fnt.glyphs)
 }
 
-// Glyph returns the i-th glyph from the PK font.
-func (fnt *Font) Glyph(i int) *Glyph {
+// GlyphAt returns the i-th glyph from the PK font.
+func (fnt *Font) GlyphAt(i int) *Glyph {
 	if i < 0 || len(fnt.glyphs) <= i {
 		return nil
 	}
 	return &fnt.glyphs[i]
+}
+
+// Glyph returns the glyph corresponding to the provided rune r,
+// or nil if it is not present in the PK font.
+func (fnt *Font) Glyph(r rune) *Glyph {
+	g, ok := fnt.gidx(r)
+	if !ok {
+		return nil
+	}
+	return g
+}
+
+func (fnt *Font) gidx(r rune) (*Glyph, bool) {
+	for i := range fnt.glyphs {
+		g := &fnt.glyphs[i]
+		if g.code == uint32(r) {
+			return g, true
+		}
+	}
+	return nil, false
 }

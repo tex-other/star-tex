@@ -51,7 +51,7 @@ func TestFont(t *testing.T) {
 			}
 
 			for i := 0; i < fnt.NumGlyphs(); i++ {
-				g := fnt.Glyph(i)
+				g := fnt.GlyphAt(i)
 				g.unpack()
 			}
 		})
