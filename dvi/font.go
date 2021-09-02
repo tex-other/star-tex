@@ -5,7 +5,13 @@
 package dvi
 
 import (
+	"image"
+
+	"star-tex.org/x/tex/font"
+	"star-tex.org/x/tex/font/fixed"
+	"star-tex.org/x/tex/font/pkf"
 	"star-tex.org/x/tex/font/tfm"
+	"star-tex.org/x/tex/kpath"
 )
 
 // Font describes a DVI font, with TeX Font Metrics and its
@@ -13,4 +19,53 @@ import (
 type Font struct {
 	font *tfm.Font
 	face *tfm.Face
+}
+
+func (fnt *Font) Face() font.Face {
+	// return fnt.face
+	return fakeFace{}
+}
+
+type fakeFace struct{}
+
+func (fakeFace) Glyph(dot fixed.Point12_20, r rune) (
+	dr image.Rectangle, mask image.Image, maskp image.Point, advance fixed.Int12_20, ok bool) {
+	return pkFace.Glyph(dot, r)
+}
+
+var pkFace font.Face
+
+func init() {
+	ktx := kpath.New()
+	fname, err := ktx.Find("cmr10.pk")
+	if err != nil {
+		panic(err)
+	}
+	fpkf, err := ktx.Open(fname)
+	if err != nil {
+		panic(err)
+	}
+	defer fpkf.Close()
+
+	fname, err = ktx.Find("cmr10.tfm")
+	if err != nil {
+		panic(err)
+	}
+	ftfm, err := ktx.Open(fname)
+	if err != nil {
+		panic(err)
+	}
+	defer ftfm.Close()
+
+	pfnt, err := pkf.Parse(fpkf)
+	if err != nil {
+		panic(err)
+	}
+
+	tfnt, err := tfm.Parse(ftfm)
+	if err != nil {
+		panic(err)
+	}
+
+	pkFace = pkf.NewFace(pfnt, &tfnt, nil)
 }
