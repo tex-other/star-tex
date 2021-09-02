@@ -109,8 +109,11 @@ func (pr *pngRenderer) DrawGlyph(x, y int32, font dvi.Font, glyph rune, c color.
 	}
 	_ = adv
 
-	draw.DrawMask(pr.img, dr, image.NewUniform(c), maskp,
-		mask, dr.Min, draw.Over,
+	draw.DrawMask(
+		pr.img,
+		dr, image.NewUniform(c),
+		maskp, mask,
+		dr.Min, draw.Over,
 	)
 
 	//		log.Printf(
@@ -148,8 +151,8 @@ func roundF32(v float32) int32 {
 
 func (pr *pngRenderer) pixels(v int32) int32 {
 	x := pr.conv * float32(v)
-	//return roundF32(x / 3)
-	return roundF32(x)
+	return roundF32(x / 3)
+	//return roundF32(x)
 }
 
 func (pr *pngRenderer) rulepixels(v int32) int32 {
