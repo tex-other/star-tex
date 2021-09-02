@@ -8,35 +8,42 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"image/draw"
 	"image/png"
 	"log"
 	"os"
 	"strconv"
 
 	"star-tex.org/x/tex/dvi"
+	"star-tex.org/x/tex/font/fixed"
 )
 
 type pngRenderer struct {
 	name string
 	page int
 
-	xmax int32
-	ymax int32
+	bkg color.Color
 
 	pre   dvi.CmdPre
+	post  dvi.CmdPost
 	conv  float32 // converts DVI units to pixels
 	tconv float32 // converts unmagnified DVI units to pixels
 
-	cmds []func()
-	err  error
+	img draw.Image
+	err error
 }
 
-func (pr *pngRenderer) Init(pre *dvi.CmdPre) {
+func (pr *pngRenderer) Init(pre *dvi.CmdPre, post *dvi.CmdPost) {
 	pr.pre = *pre
+	pr.post = *post
 	res := float32(300)
 	conv := float32(pr.pre.Num) / 254000.0 * (res / float32(pr.pre.Den))
 	pr.tconv = conv
 	pr.conv = conv * float32(pr.pre.Mag) / 1000.0
+
+	if pr.bkg == nil {
+		pr.bkg = color.White
+	}
 }
 
 func (pr *pngRenderer) BOP(bop *dvi.CmdBOP) {
@@ -45,11 +52,14 @@ func (pr *pngRenderer) BOP(bop *dvi.CmdBOP) {
 	}
 
 	pr.page = int(bop.C0)
-	log.Printf(">>> bop: %+v", bop)
 
-	pr.xmax = 0
-	pr.ymax = 0
-	pr.cmds = pr.cmds[:0]
+	bnd := image.Rect(0, 0,
+		int(pr.pixels(int32(pr.post.Width))),
+		int(pr.pixels(int32(pr.post.Height))),
+	)
+	//pr.img = image.NewRGBA(bnd)
+	pr.img = image.NewPaletted(bnd, color.Palette{pr.bkg, color.Black})
+	//draw.Draw(pr.img, bnd, image.NewUniform(pr.bkg), image.Point{}, draw.Over)
 }
 
 func (pr *pngRenderer) EOP() {
@@ -67,18 +77,7 @@ func (pr *pngRenderer) EOP() {
 	}
 	defer f.Close()
 
-	for _, cmd := range pr.cmds {
-		cmd()
-	}
-
-	var (
-		xmax   = int(pr.pixels(pr.xmax))
-		ymax   = int(pr.pixels(pr.ymax))
-		bounds = image.Rect(0, 0, xmax, ymax)
-	)
-	log.Printf("==> %+v", bounds)
-	img := image.NewRGBA(bounds)
-	err = png.Encode(f, img)
+	err = png.Encode(f, pr.img)
 	if err != nil {
 		if pr.err == nil {
 			pr.err = fmt.Errorf("could not encode PNG image: %w", err)
@@ -96,25 +95,41 @@ func (pr *pngRenderer) EOP() {
 }
 
 func (pr *pngRenderer) DrawGlyph(x, y int32, font dvi.Font, glyph rune, c color.Color) {
-	pr.xmax = maxI32(x, pr.xmax) // FIXME(sbinet): add glyph extent to x
-	pr.ymax = maxI32(y, pr.ymax) // FIXME(sbinet): add glyph extent to y
-	pr.cmds = append(pr.cmds, func() {
-		log.Printf(
-			"draw-glyph(%d, %d, %v, %q, %v)...",
-			x, y, font, glyph, c,
-		)
-	})
+	dot := fixed.Point12_20{
+		X: fixed.Int12_20(pr.pixels(x)),
+		Y: fixed.Int12_20(pr.pixels(y)),
+	}
+	dr, mask, maskp, adv, ok := font.Face().Glyph(dot, glyph)
+	if !ok {
+		if pr.err != nil {
+			return
+		}
+		pr.err = fmt.Errorf("could not find glyph 0x%02x")
+		return
+	}
+	_ = adv
+
+	draw.DrawMask(pr.img, dr, image.NewUniform(c), maskp,
+		mask, dr.Min, draw.Over,
+	)
+
+	//		log.Printf(
+	//			"draw-glyph(%d, %d, %v, %q, %v)...",
+	//			x, y, font, glyph, c,
+	//		)
 }
 
 func (pr *pngRenderer) DrawRule(x, y, w, h int32, c color.Color) {
-	pr.xmax = maxI32(x+w, pr.xmax)
-	pr.ymax = maxI32(y+h, pr.ymax)
-	pr.cmds = append(pr.cmds, func() {
-		log.Printf(
-			"draw-rule(%d, %d, %d, %d, %v)...",
-			x, y, w, h, c,
-		)
-	})
+	log.Printf(
+		"draw-rule(%d, %d, %d, %d, %v)...",
+		x, y, w, h, c,
+	)
+	r := image.Rect(
+		int(pr.pixels(x+0)), int(pr.pixels(y+0)),
+		int(pr.pixels(x+w)), int(pr.pixels(y+h)),
+	)
+
+	draw.Draw(pr.img, r, image.NewUniform(c), image.Point{}, draw.Over)
 }
 
 func maxI32(a, b int32) int32 {
@@ -133,6 +148,7 @@ func roundF32(v float32) int32 {
 
 func (pr *pngRenderer) pixels(v int32) int32 {
 	x := pr.conv * float32(v)
+	//return roundF32(x / 3)
 	return roundF32(x)
 }
 
