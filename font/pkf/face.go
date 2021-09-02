@@ -23,23 +23,43 @@ type Face struct {
 // FaceOptions describes the possible options given to NewFace when
 // creating a new Face from a Font.
 type FaceOptions struct {
-	Size fixed.Int12_20 // Size is the font size in DVI points.
+	Size float64 // Size is the font size in DVI points.
+	DPI  float64 // DPI is the dots per inch resolution
 }
 
 func defaultFaceOptions(font *tfm.Font) *FaceOptions {
 	return &FaceOptions{
-		Size: font.DesignSize(),
+		Size: font.DesignSize().Float64(),
+		DPI:  72,
 	}
+}
+
+// Units are an integral number of abstract, scalable "font units". The em
+// square is typically 1000 or 2048 "font units". This would map to a certain
+// number (e.g. 30 pixels) of physical pixels, depending on things like the
+// display resolution (DPI) and font size (e.g. a 12 point font).
+type units int32
+
+// scale returns x divided by unitsPerEm, rounded to the nearest fixed.Int12_20
+// value (1/1048576th of a pixel).
+func scale(x fixed.Int12_20, unitsPerEm units) fixed.Int12_20 {
+	if x >= 0 {
+		x += fixed.Int12_20(unitsPerEm) / 2
+	} else {
+		x -= fixed.Int12_20(unitsPerEm) / 2
+	}
+	return x / fixed.Int12_20(unitsPerEm)
 }
 
 func NewFace(font *Font, metrics *tfm.Font, opts *FaceOptions) *Face {
 	if opts == nil {
 		opts = defaultFaceOptions(metrics)
 	}
+	log.Printf("design: %v", opts.Size)
 	return &Face{
 		font:  font,
 		tfm:   metrics,
-		scale: opts.Size,
+		scale: fixed.Int12_20(0.5 + (opts.Size * opts.DPI * 64 / 72)),
 	}
 }
 
