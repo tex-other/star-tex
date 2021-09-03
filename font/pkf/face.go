@@ -118,7 +118,40 @@ func (face *Face) Glyph(dot fixed.Point12_20, r rune) (
 	//		Pix:    g.mask,
 	//		Rect:   image.Rect(0, 0, w, int(g.height)),
 	//	}
-	advance = fixed.Int12_20(g.width)
+	advance = fixed.Int12_20((int64(g.width) * int64(face.scale)) >> 20)
+	ok = true
+	return
+}
+
+// GlyphBounds returns the bounding box of r's glyph, drawn at a dot equal
+// to the origin, and that glyph's advance width.
+//
+// It returns !ok if the face does not contain a glyph for r.
+//
+// The glyph's ascent and descent are equal to -bounds.Min.Y and
+// +bounds.Max.Y. The glyph's left-side and right-side bearings are equal
+// to bounds.Min.X and advance-bounds.Max.X. A visual depiction of what
+// these metrics are is at
+// https://developer.apple.com/library/archive/documentation/TextFonts/Conceptual/CocoaTextArchitecture/Art/glyphterms_2x.png
+func (face *Face) GlyphBounds(r rune) (bounds fixed.Rectangle12_20, advance fixed.Int12_20, ok bool) {
+
+	g, ok := face.font.gidx(r)
+	if !ok {
+		return
+	}
+
+	bounds = fixed.Rectangle12_20{
+		Min: fixed.Point12_20{
+			X: 0,
+			Y: 0,
+		},
+		Max: fixed.Point12_20{
+			X: fixed.Int12_20(g.width),
+			Y: fixed.Int12_20(g.height),
+		},
+	}
+
+	advance = fixed.Int12_20((int64(g.width) * int64(face.scale)) >> 20)
 	ok = true
 	return
 }
