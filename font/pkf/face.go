@@ -79,8 +79,8 @@ func (face *Face) Glyph(dot fixed.Point12_20, r rune) (
 	g.unpack()
 
 	p := image.Point{
-		X: int(dot.X),
-		Y: int(dot.Y),
+		X: int(dot.X) - int(g.width)/2,
+		Y: int(dot.Y) - int(g.height)/2,
 	}
 
 	dr = image.Rectangle{
@@ -90,20 +90,23 @@ func (face *Face) Glyph(dot fixed.Point12_20, r rune) (
 			Y: int(g.height),
 		}),
 	}
-	if true {
-		maskp.X = int(g.xoff)
-		maskp.Y = int(g.yoff) // FIXME(sbinet): y-axis direction.
+	if false {
+		maskp.X -= int(g.xoff)
+		maskp.Y -= int(g.yoff) // FIXME(sbinet): y-axis direction.
 	}
 
 	if r == 'T' || r == 'a' || true {
 		log.Printf(
-			"glyph: %q h=%d w=%d dot=%+v --> p=%+v (off=(%d, %d), size=(%d,%d)",
+			"glyph: %q h=%d w=%d dot=%+v --> p=%+v (off=(%d, %d), size=(%d,%d), d(%d,%d) tfmw: %d flag=%d",
 			r,
 			g.height, g.width,
 			dot,
 			p,
 			g.xoff, g.yoff,
 			g.width, g.height,
+			g.dx, g.dy,
+			g.wtfm,
+			g.flag,
 		)
 	}
 
