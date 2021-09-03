@@ -18,6 +18,10 @@ import (
 	"star-tex.org/x/tex/font/fixed"
 )
 
+const (
+	shrink = 4
+)
+
 type pngRenderer struct {
 	name string
 	page int
@@ -28,6 +32,7 @@ type pngRenderer struct {
 	post  dvi.CmdPost
 	conv  float32 // converts DVI units to pixels
 	tconv float32 // converts unmagnified DVI units to pixels
+	dpi   float32
 
 	img draw.Image
 	err error
@@ -36,10 +41,27 @@ type pngRenderer struct {
 func (pr *pngRenderer) Init(pre *dvi.CmdPre, post *dvi.CmdPost) {
 	pr.pre = *pre
 	pr.post = *post
-	res := float32(300)
+	if pr.dpi == 0 {
+		pr.dpi = 300
+	}
+	res := pr.dpi
 	conv := float32(pr.pre.Num) / 254000.0 * (res / float32(pr.pre.Den))
 	pr.tconv = conv
 	pr.conv = conv * float32(pr.pre.Mag) / 1000.0
+
+	conv = 1/(float32(pre.Num)/float32(pre.Den)*
+		(float32(pre.Mag)/1000.0)*
+		(100*4/254000.0)) + 0.5
+	log.Printf("init: conv=%v, tconv=%v", pr.conv, pr.tconv)
+	log.Printf("init: conv=%v, tconv=%v", conv, pr.tconv)
+	log.Printf("init: num=%d, den=%d, dpi=%v",
+		pr.pre.Num, pr.pre.Den, pr.dpi,
+	)
+
+	//  dvi->conv = (1.0 / ((dvi->num / dvi->den) *
+	//                      ((double)dvi->mag / 1000.0) *
+	//                      ((double)dpi * shrinkfactor / 254000.0))) +
+	//              0.5;
 
 	if pr.bkg == nil {
 		pr.bkg = color.White
@@ -95,6 +117,11 @@ func (pr *pngRenderer) EOP() {
 }
 
 func (pr *pngRenderer) DrawGlyph(x, y int32, font dvi.Font, glyph rune, c color.Color) {
+	log.Printf(
+		"draw-glyph(%d, %d, %v, %q, %v)...",
+		x, y, font, glyph, c,
+	)
+
 	dot := fixed.Point12_20{
 		X: fixed.Int12_20(pr.pixels(x)),
 		Y: fixed.Int12_20(pr.pixels(y)),
@@ -116,10 +143,6 @@ func (pr *pngRenderer) DrawGlyph(x, y int32, font dvi.Font, glyph rune, c color.
 		dr.Min, draw.Over,
 	)
 
-	//		log.Printf(
-	//			"draw-glyph(%d, %d, %v, %q, %v)...",
-	//			x, y, font, glyph, c,
-	//		)
 }
 
 func (pr *pngRenderer) DrawRule(x, y, w, h int32, c color.Color) {
@@ -151,8 +174,8 @@ func roundF32(v float32) int32 {
 
 func (pr *pngRenderer) pixels(v int32) int32 {
 	x := pr.conv * float32(v)
-	return roundF32(x / 3)
-	//return roundF32(x)
+	//return roundF32(x / 3)
+	return roundF32(x)
 }
 
 func (pr *pngRenderer) rulepixels(v int32) int32 {
