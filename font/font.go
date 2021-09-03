@@ -34,4 +34,16 @@ type Face interface {
 	// a copy.
 	Glyph(dot fixed.Point12_20, r rune) (
 		dr image.Rectangle, mask image.Image, maskp image.Point, advance fixed.Int12_20, ok bool)
+
+	// GlyphBounds returns the bounding box of r's glyph, drawn at a dot equal
+	// to the origin, and that glyph's advance width.
+	//
+	// It returns !ok if the face does not contain a glyph for r.
+	//
+	// The glyph's ascent and descent are equal to -bounds.Min.Y and
+	// +bounds.Max.Y. The glyph's left-side and right-side bearings are equal
+	// to bounds.Min.X and advance-bounds.Max.X. A visual depiction of what
+	// these metrics are is at
+	// https://developer.apple.com/library/archive/documentation/TextFonts/Conceptual/CocoaTextArchitecture/Art/glyphterms_2x.png
+	GlyphBounds(r rune) (bounds fixed.Rectangle12_20, advance fixed.Int12_20, ok bool)
 }
