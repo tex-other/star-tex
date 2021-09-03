@@ -95,13 +95,15 @@ func (face *Face) Glyph(dot fixed.Point12_20, r rune) (
 		maskp.Y = int(g.yoff) // FIXME(sbinet): y-axis direction.
 	}
 
-	if r == 'T' || r == 'a' {
+	if r == 'T' || r == 'a' || true {
 		log.Printf(
-			"glyph: %q h=%d w=%d dot=%+v --> p=%+v",
+			"glyph: %q h=%d w=%d dot=%+v --> p=%+v (off=(%d, %d), size=(%d,%d)",
 			r,
 			g.height, g.width,
 			dot,
 			p,
+			g.xoff, g.yoff,
+			g.width, g.height,
 		)
 	}
 
@@ -121,3 +123,7 @@ func (face *Face) Glyph(dot fixed.Point12_20, r rune) (
 var (
 	_ font.Face = (*Face)(nil)
 )
+
+func sp2px(v fixed.Int12_20, dpi float64) int {
+	return 0
+}
