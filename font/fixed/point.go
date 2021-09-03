@@ -10,3 +10,8 @@ package fixed
 type Point12_20 struct {
 	X, Y Int12_20
 }
+
+type Rectangle12_20 struct {
+	Min Point12_20
+	Max Point12_20
+}
