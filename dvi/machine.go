@@ -1072,6 +1072,7 @@ func (m *Machine) face(i int) (*tfm.Face, error) {
 
 func (m *Machine) loadFont(i int) (*tfm.Face, error) {
 	def := m.state.fonts[i]
+	log.Printf("font %q: scale=%v, design=%d", def.Name, def.Size, def.Design)
 	// FIXME: add support for non-TFM fonts?
 	name, err := m.ktx.Find(def.Name + ".tfm")
 	if err != nil {

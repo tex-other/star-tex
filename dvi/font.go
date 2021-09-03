@@ -33,6 +33,10 @@ func (fakeFace) Glyph(dot fixed.Point12_20, r rune) (
 	return pkFace.Glyph(dot, r)
 }
 
+func (fakeFace) GlyphBounds(r rune) (bounds fixed.Rectangle12_20, advance fixed.Int12_20, ok bool) {
+	return pkFace.GlyphBounds(r)
+}
+
 var pkFace font.Face
 
 func init() {
