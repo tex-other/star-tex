@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"image/color"
 	"io"
+	"log"
 	"sort"
 	"strings"
 
@@ -926,6 +927,12 @@ func (m *Machine) drawGlyph(op opCode, cmd int32) error {
 	if err != nil {
 		return err
 	}
+
+	log.Printf("dvi: h=%d, v=%d, hh=%d, vv=%d char=%d",
+		cur.h, cur.v,
+		cur.hh, cur.vv,
+		rune(cmd),
+	)
 
 	m.rdr.DrawGlyph(cur.h, cur.v, m.font(), rune(cmd), color.Black)
 
