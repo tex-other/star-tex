@@ -79,8 +79,8 @@ func (pr *pngRenderer) BOP(bop *dvi.CmdBOP) {
 		int(pr.pixels(int32(pr.post.Width))),
 		int(pr.pixels(int32(pr.post.Height))),
 	)
-	//pr.img = image.NewRGBA(bnd)
-	pr.img = image.NewPaletted(bnd, color.Palette{pr.bkg, color.Black})
+	pr.img = image.NewRGBA(bnd)
+	//pr.img = image.NewPaletted(bnd, color.Palette{pr.bkg, color.Black})
 	//draw.Draw(pr.img, bnd, image.NewUniform(pr.bkg), image.Point{}, draw.Over)
 }
 
@@ -118,8 +118,10 @@ func (pr *pngRenderer) EOP() {
 
 func (pr *pngRenderer) DrawGlyph(x, y int32, font dvi.Font, glyph rune, c color.Color) {
 	log.Printf(
-		"draw-glyph(%d, %d, %v, %q, %v)...",
+		"draw-glyph(%d, %d, %v, %q, %v)... --> pix(%v,%v) (img-size: %v)",
 		x, y, font, glyph, c,
+		pr.pixels(x), pr.pixels(y),
+		pr.img.Bounds().Max,
 	)
 
 	dot := fixed.Point12_20{
@@ -134,7 +136,25 @@ func (pr *pngRenderer) DrawGlyph(x, y int32, font dvi.Font, glyph rune, c color.
 		pr.err = fmt.Errorf("could not find glyph 0x%02x", glyph)
 		return
 	}
+	bnds, adv, ok := font.Face().GlyphBounds(glyph)
+	if !ok {
+		panic("boo")
+	}
+	log.Printf("bnds: %+v", bnds)
 	_ = adv
+
+	bbox := image.Rect(
+		//		0,0,
+		int(pr.pixels(x)), int(pr.pixels(y)),
+		int(bnds.Max.X.Float64()),
+		int(bnds.Max.Y.Float64()),
+	)
+	bbox = image.Rect(0, 0, pr.img.Bounds().Dx()/2, pr.img.Bounds().Dy()/2)
+	draw.Draw(pr.img, bbox, image.NewUniform(color.RGBA{R: 255, A: 127}),
+		//image.Pt(int(pr.pixels(x)), int(pr.pixels(y))),
+		image.Pt(0, 0),
+		draw.Over,
+	)
 
 	draw.DrawMask(
 		pr.img,
@@ -174,8 +194,8 @@ func roundF32(v float32) int32 {
 
 func (pr *pngRenderer) pixels(v int32) int32 {
 	x := pr.conv * float32(v)
-	//return roundF32(x / 3)
-	return roundF32(x)
+	return roundF32(x / 3)
+	//return roundF32(x)
 }
 
 func (pr *pngRenderer) rulepixels(v int32) int32 {
