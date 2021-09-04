@@ -6,6 +6,7 @@ package dvi
 
 import (
 	"image"
+	"os"
 
 	"star-tex.org/x/tex/font"
 	"star-tex.org/x/tex/font/fixed"
@@ -45,10 +46,11 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	fpkf, err := ktx.Open(fname)
-	if err != nil {
-		panic(err)
-	}
+	fpkf, err := os.Open("/home/binet/.texlive/texmf-var/fonts/pk/ljfour/public/cm/cmr10.600pk")
+	//fpkf, err := ktx.Open(fname)
+	//if err != nil {
+	//	panic(err)
+	//}
 	defer fpkf.Close()
 
 	fname, err = ktx.Find("cmr10.tfm")

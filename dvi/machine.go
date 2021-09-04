@@ -182,6 +182,8 @@ func (m *Machine) run(p Program, ip int) error {
 			if err != nil {
 				return fmt.Errorf("could not set char %q: %w", op, err)
 			}
+			log.Printf("%d: %s", pos, strings.Replace(cmd.Name(), "_", "", -1))
+			log.Printf("regs: %+v", m.state.cur())
 
 		case opSet1:
 			cmd := op.cmd().(*CmdSet1)
@@ -315,6 +317,8 @@ func (m *Machine) run(p Program, ip int) error {
 				cur.h, cur.v, cur.w, cur.x, cur.y, cur.z,
 				cur.hh, cur.vv,
 			)
+			log.Printf("--- push ---")
+			log.Printf("%+v", cur)
 
 		case opPop:
 			m.flushText()
