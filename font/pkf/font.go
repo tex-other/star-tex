@@ -7,6 +7,7 @@ package pkf
 import (
 	"fmt"
 	"io"
+	"log"
 
 	"star-tex.org/x/tex/font/fixed"
 	"star-tex.org/x/tex/internal/iobuf"
@@ -16,6 +17,26 @@ import (
 type Font struct {
 	hdr    CmdPre
 	glyphs []Glyph
+}
+
+func sp2dpi(v uint32) float64 {
+	return in2pt(sp2pt(v))
+}
+
+func sp2pt(v uint32) float64 {
+	const (
+		sp_in_pt = 1 << 16
+		pt_in_sp = 1. / sp_in_pt
+	)
+
+	return float64(v) * pt_in_sp
+}
+
+func in2pt(v float64) float64 {
+	const (
+		pt_in_inch = 7227. / 100.
+	)
+	return v * pt_in_inch
 }
 
 // Parse parses a Packed Font file.
@@ -32,6 +53,8 @@ func Parse(r io.Reader) (*Font, error) {
 
 	var fnt Font
 	fnt.hdr.read(rr)
+	log.Printf("pkf-parse: %+v", fnt.hdr)
+	log.Printf("pkf-parse: h-dpi=%v -> %v", fnt.hdr.Hppp, sp2dpi(fnt.hdr.Hppp))
 
 specials:
 	for {

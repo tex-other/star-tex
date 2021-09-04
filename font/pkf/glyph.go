@@ -7,7 +7,9 @@ package pkf
 import (
 	"fmt"
 	"image"
+	"log"
 
+	"star-tex.org/x/tex/font/fixed"
 	"star-tex.org/x/tex/internal/iobuf"
 )
 
@@ -40,6 +42,12 @@ func (g *Glyph) unpack() {
 }
 
 func (g *Glyph) Mask() image.Alpha {
+	log.Printf("pkf-glyph: tfm=%d -> %v", g.wtfm, fixed.Int12_20(g.wtfm).Float64())
+	log.Printf(
+		"pkf-glyph: char=%c, height=%d, width=%d, dx=%v, dy=%v, xoff=%v, yoff=%v",
+		g.code,
+		g.height, g.width, g.dx, g.dy, g.xoff, g.yoff,
+	)
 	g.unpack()
 	h := int(g.height)
 	w := int(g.width)
